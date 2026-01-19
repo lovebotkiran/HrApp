@@ -26,11 +26,8 @@ class JobPosting {
   final int? applicationsCount;
   @JsonKey(name: 'job_requisition_id')
   final String? jobRequisitionId;
-<<<<<<< HEAD
-=======
   @JsonKey(name: 'skills_required')
   final List<String>? skillsRequired;
->>>>>>> origin/main
   @JsonKey(name: 'created_at')
   final DateTime? createdAt;
 
@@ -49,10 +46,7 @@ class JobPosting {
     this.viewsCount,
     this.applicationsCount,
     this.jobRequisitionId,
-<<<<<<< HEAD
-=======
     this.skillsRequired,
->>>>>>> origin/main
     this.createdAt,
   });
 

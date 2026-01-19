@@ -4,15 +4,9 @@ part 'offer.g.dart';
 
 @JsonSerializable()
 class Offer {
-<<<<<<< HEAD
-  final int? id;
-  @JsonKey(name: 'application_id')
-  final int applicationId;
-=======
   final String? id;
   @JsonKey(name: 'application_id')
   final String applicationId;
->>>>>>> origin/main
   @JsonKey(name: 'base_salary')
   final double baseSalary;
   final double? bonus;

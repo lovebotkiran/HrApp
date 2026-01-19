@@ -4,11 +4,7 @@ part 'candidate.g.dart';
 
 @JsonSerializable()
 class Candidate {
-<<<<<<< HEAD
-  final int? id;
-=======
   final String? id;
->>>>>>> origin/main
   @JsonKey(name: 'first_name')
   final String firstName;
   @JsonKey(name: 'last_name')
@@ -21,17 +17,11 @@ class Candidate {
   final String? linkedinUrl;
   @JsonKey(name: 'portfolio_url')
   final String? portfolioUrl;
-<<<<<<< HEAD
-  final String? skills;
-  final String? experience;
-  final String? education;
-=======
   final List<String>? skills;
   final String? experience;
   final String? education;
   final List<String>? certifications;
   final List<String>? languages;
->>>>>>> origin/main
   @JsonKey(name: 'created_at')
   final DateTime? createdAt;
 
@@ -47,11 +37,8 @@ class Candidate {
     this.skills,
     this.experience,
     this.education,
-<<<<<<< HEAD
-=======
     this.certifications,
     this.languages,
->>>>>>> origin/main
     this.createdAt,
   });
 

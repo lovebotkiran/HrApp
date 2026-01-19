@@ -7,13 +7,8 @@ part of 'referral.dart';
 // **************************************************************************
 
 Referral _$ReferralFromJson(Map<String, dynamic> json) => Referral(
-<<<<<<< HEAD
-      id: (json['id'] as num?)?.toInt(),
-      referrerId: (json['referrer_id'] as num).toInt(),
-=======
       id: json['id'] as String?,
       referrerId: json['referrer_id'] as String,
->>>>>>> origin/main
       candidateName: json['candidate_name'] as String,
       candidateEmail: json['candidate_email'] as String,
       candidatePhone: json['candidate_phone'] as String?,

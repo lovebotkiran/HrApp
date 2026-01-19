@@ -7,15 +7,9 @@ part of 'interview.dart';
 // **************************************************************************
 
 Interview _$InterviewFromJson(Map<String, dynamic> json) => Interview(
-<<<<<<< HEAD
-      id: (json['id'] as num?)?.toInt(),
-      applicationId: (json['application_id'] as num).toInt(),
-      interviewerId: (json['interviewer_id'] as num).toInt(),
-=======
       id: json['id'] as String?,
       applicationId: json['application_id'] as String,
       interviewerId: json['interviewer_id'] as String,
->>>>>>> origin/main
       scheduledTime: DateTime.parse(json['scheduled_time'] as String),
       duration: (json['duration'] as num?)?.toInt() ?? 60,
       interviewType: json['interview_type'] as String? ?? 'Technical',

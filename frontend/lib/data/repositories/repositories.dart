@@ -1,21 +1,14 @@
-<<<<<<< HEAD
-import 'dart:io';
-=======
 import 'package:flutter_riverpod/flutter_riverpod.dart';
->>>>>>> origin/main
 import '../datasources/api_client.dart';
 import '../models/job_requisition.dart';
 import '../models/candidate.dart';
 import '../models/interview.dart';
 import '../models/offer.dart';
-<<<<<<< HEAD
-=======
 import '../models/job_posting.dart';
 import '../models/application.dart';
 import '../models/onboarding_task.dart';
 import '../models/referral.dart';
 import '../models/dashboard_metrics.dart';
->>>>>>> origin/main
 import '../../core/services/token_storage.dart';
 
 class JobRequisitionRepository {
@@ -28,25 +21,11 @@ class JobRequisitionRepository {
     int limit = 100,
     String? status,
     String? search,
-<<<<<<< HEAD
-  }) =>
-      _apiClient.getRequisitions(
-          skip: skip, limit: limit, status: status, search: search);
-=======
   }) => _apiClient.getRequisitions(skip: skip, limit: limit, status: status, search: search);
->>>>>>> origin/main
 
   Future<JobRequisition> createRequisition(Map<String, dynamic> data) =>
       _apiClient.createRequisition(data);
 
-<<<<<<< HEAD
-  Future<JobRequisition> getRequisition(String id) =>
-      _apiClient.getRequisition(id);
-
-  Future<JobRequisition> updateRequisition(
-          String id, Map<String, dynamic> data) =>
-      _apiClient.updateRequisition(id, data);
-=======
   Future<JobRequisition> getRequisition(String id) => _apiClient.getRequisition(id);
 
   Future<JobRequisition> updateRequisition(String id, Map<String, dynamic> data) =>
@@ -54,7 +33,6 @@ class JobRequisitionRepository {
 
   Future<JobRequisition> approveRequisition(String id, Map<String, dynamic> data) =>
       _apiClient.approveRequisition(id, data);
->>>>>>> origin/main
 }
 
 class AuthRepository {
@@ -65,21 +43,13 @@ class AuthRepository {
   Future<Map<String, dynamic>> login(Map<String, dynamic> credentials) async {
     final response = await _apiClient.login(credentials);
     final data = response.data as Map<String, dynamic>;
-<<<<<<< HEAD
-
-=======
     
->>>>>>> origin/main
     // Save tokens to secure storage
     await TokenStorage.saveTokens(
       accessToken: data['access_token'] as String,
       refreshToken: data['refresh_token'] as String,
     );
-<<<<<<< HEAD
-
-=======
     
->>>>>>> origin/main
     return data;
   }
 
@@ -109,25 +79,14 @@ class CandidateRepository {
     int skip = 0,
     int limit = 100,
     String? search,
-<<<<<<< HEAD
-  }) =>
-      _apiClient.getCandidates(skip: skip, limit: limit, search: search);
-=======
   }) => _apiClient.getCandidates(skip: skip, limit: limit, search: search);
->>>>>>> origin/main
 
   Future<Candidate> createCandidate(Map<String, dynamic> data) =>
       _apiClient.createCandidate(data);
 
-<<<<<<< HEAD
-  Future<Candidate> getCandidate(int id) => _apiClient.getCandidate(id);
-
-  Future<void> uploadResume(String candidateId, File file) async {
-=======
   Future<Candidate> getCandidate(String id) => _apiClient.getCandidate(id);
 
   Future<void> uploadResume(String candidateId, dynamic file) async {
->>>>>>> origin/main
     await _apiClient.uploadResume(candidateId, file);
   }
 
@@ -145,12 +104,7 @@ class InterviewRepository {
     int skip = 0,
     int limit = 100,
     String? status,
-<<<<<<< HEAD
-  }) =>
-      _apiClient.getInterviews(skip: skip, limit: limit, status: status);
-=======
   }) => _apiClient.getInterviews(skip: skip, limit: limit, status: status);
->>>>>>> origin/main
 
   Future<Interview> scheduleInterview(Map<String, dynamic> data) =>
       _apiClient.scheduleInterview(data);
@@ -165,12 +119,7 @@ class OfferRepository {
     int skip = 0,
     int limit = 100,
     String? status,
-<<<<<<< HEAD
-  }) =>
-      _apiClient.getOffers(skip: skip, limit: limit, status: status);
-=======
   }) => _apiClient.getOffers(skip: skip, limit: limit, status: status);
->>>>>>> origin/main
 
   Future<Offer> createOffer(Map<String, dynamic> data) =>
       _apiClient.createOffer(data);
@@ -187,54 +136,28 @@ class JobPostingRepository {
     String? status,
     String? search,
   }) async {
-<<<<<<< HEAD
-    final response = await _apiClient.getJobPostings(
-        skip: skip, limit: limit, status: status, search: search);
-    return List<Map<String, dynamic>>.from(response.data as List);
-  }
-
-  Future<Map<String, dynamic>> getJobPosting(int id) async {
-=======
     final response = await _apiClient.getJobPostings(skip: skip, limit: limit, status: status, search: search);
     return List<Map<String, dynamic>>.from(response.data as List);
   }
 
   Future<Map<String, dynamic>> getJobPosting(String id) async {
->>>>>>> origin/main
     final response = await _apiClient.getJobPosting(id);
     return response.data as Map<String, dynamic>;
   }
 
-<<<<<<< HEAD
-  Future<Map<String, dynamic>> createJobPosting(
-      Map<String, dynamic> data) async {
-=======
   Future<Map<String, dynamic>> createJobPosting(Map<String, dynamic> data) async {
->>>>>>> origin/main
     final response = await _apiClient.createJobPosting(data);
     return response.data as Map<String, dynamic>;
   }
 
-<<<<<<< HEAD
-  Future<Map<String, dynamic>> updateJobPosting(
-      int id, Map<String, dynamic> data) async {
-=======
   Future<Map<String, dynamic>> updateJobPosting(String id, Map<String, dynamic> data) async {
->>>>>>> origin/main
     final response = await _apiClient.updateJobPosting(id, data);
     return response.data as Map<String, dynamic>;
   }
 
-<<<<<<< HEAD
-  Future<void> deleteJobPosting(int id) => _apiClient.deleteJobPosting(id);
-
-  Future<Map<String, dynamic>> publishJobPosting(
-      int id, Map<String, dynamic> platforms) async {
-=======
   Future<void> deleteJobPosting(String id) => _apiClient.deleteJobPosting(id);
 
   Future<Map<String, dynamic>> publishJobPosting(String id, Map<String, dynamic> platforms) async {
->>>>>>> origin/main
     final response = await _apiClient.publishJobPosting(id, platforms);
     return response.data as Map<String, dynamic>;
   }
@@ -249,16 +172,6 @@ class ApplicationRepository {
     int skip = 0,
     int limit = 100,
     String? status,
-<<<<<<< HEAD
-    int? jobPostingId,
-  }) async {
-    final response = await _apiClient.getApplications(
-        skip: skip, limit: limit, status: status, jobPostingId: jobPostingId);
-    return List<Map<String, dynamic>>.from(response.data as List);
-  }
-
-  Future<Map<String, dynamic>> getApplication(int id) async {
-=======
     String? jobPostingId,
   }) async {
     final response = await _apiClient.getApplications(skip: skip, limit: limit, status: status, jobPostingId: jobPostingId);
@@ -266,47 +179,25 @@ class ApplicationRepository {
   }
 
   Future<Map<String, dynamic>> getApplication(String id) async {
->>>>>>> origin/main
     final response = await _apiClient.getApplication(id);
     return response.data as Map<String, dynamic>;
   }
 
-<<<<<<< HEAD
-  Future<Map<String, dynamic>> submitApplication(
-      Map<String, dynamic> data) async {
-=======
   Future<Map<String, dynamic>> submitApplication(Map<String, dynamic> data) async {
->>>>>>> origin/main
     final response = await _apiClient.submitApplication(data);
     return response.data as Map<String, dynamic>;
   }
 
-<<<<<<< HEAD
-  Future<Map<String, dynamic>> updateApplicationStatus(
-      int id, Map<String, dynamic> data) async {
-=======
   Future<Map<String, dynamic>> updateApplicationStatus(String id, Map<String, dynamic> data) async {
->>>>>>> origin/main
     final response = await _apiClient.updateApplicationStatus(id, data);
     return response.data as Map<String, dynamic>;
   }
 
-<<<<<<< HEAD
-  Future<Map<String, dynamic>> shortlistApplication(int id) async {
-=======
   Future<Map<String, dynamic>> shortlistApplication(String id) async {
->>>>>>> origin/main
     final response = await _apiClient.shortlistApplication(id);
     return response.data as Map<String, dynamic>;
   }
 
-<<<<<<< HEAD
-  Future<Map<String, dynamic>> rejectApplication(
-      int id, Map<String, dynamic> data) async {
-    final response = await _apiClient.rejectApplication(id, data);
-    return response.data as Map<String, dynamic>;
-  }
-=======
   Future<Map<String, dynamic>> rejectApplication(String id, Map<String, dynamic> data) async {
     final response = await _apiClient.rejectApplication(id, data);
     return response.data as Map<String, dynamic>;
@@ -316,7 +207,6 @@ class ApplicationRepository {
     final response = await _apiClient.rankAll();
     return response.data as Map<String, dynamic>;
   }
->>>>>>> origin/main
 }
 
 class OnboardingRepository {
@@ -324,21 +214,12 @@ class OnboardingRepository {
 
   OnboardingRepository(this._apiClient);
 
-<<<<<<< HEAD
-  Future<Map<String, dynamic>> getOnboardingStatus(int offerId) async {
-=======
   Future<Map<String, dynamic>> getOnboardingStatus(String offerId) async {
->>>>>>> origin/main
     final response = await _apiClient.getOnboardingStatus(offerId);
     return response.data as Map<String, dynamic>;
   }
 
-<<<<<<< HEAD
-  Future<Map<String, dynamic>> createOnboardingTask(
-      Map<String, dynamic> data) async {
-=======
   Future<Map<String, dynamic>> createOnboardingTask(Map<String, dynamic> data) async {
->>>>>>> origin/main
     final response = await _apiClient.createOnboardingTask(data);
     return response.data as Map<String, dynamic>;
   }
@@ -359,20 +240,11 @@ class ReferralRepository {
     int limit = 100,
     String? status,
   }) async {
-<<<<<<< HEAD
-    final response =
-        await _apiClient.getReferrals(skip: skip, limit: limit, status: status);
-    return List<Map<String, dynamic>>.from(response.data as List);
-  }
-
-  Future<Map<String, dynamic>> getReferralStatus(int id) async {
-=======
     final response = await _apiClient.getReferrals(skip: skip, limit: limit, status: status);
     return List<Map<String, dynamic>>.from(response.data as List);
   }
 
   Future<Map<String, dynamic>> getReferralStatus(String id) async {
->>>>>>> origin/main
     final response = await _apiClient.getReferralStatus(id);
     return response.data as Map<String, dynamic>;
   }
@@ -424,12 +296,7 @@ class CandidatePortalRepository {
     return List<Map<String, dynamic>>.from(response.data as List);
   }
 
-<<<<<<< HEAD
-  Future<Map<String, dynamic>> sendPortalMessage(
-      Map<String, dynamic> data) async {
-=======
   Future<Map<String, dynamic>> sendPortalMessage(Map<String, dynamic> data) async {
->>>>>>> origin/main
     final response = await _apiClient.sendPortalMessage(data);
     return response.data as Map<String, dynamic>;
   }

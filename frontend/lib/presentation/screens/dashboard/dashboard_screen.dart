@@ -1,17 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:responsive_framework/responsive_framework.dart';
-<<<<<<< HEAD
-=======
 import 'package:fl_chart/fl_chart.dart';
->>>>>>> origin/main
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:agentichr_frontend/core/theme/app_theme.dart';
 import 'package:agentichr_frontend/domain/providers/providers.dart';
-<<<<<<< HEAD
-=======
 import '../../widgets/responsive_layout.dart';
->>>>>>> origin/main
 import '../../widgets/stat_card.dart';
 import '../../widgets/pipeline_widget.dart';
 
@@ -32,11 +26,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final pipelineAsync = ref.watch(pipelineStatsProvider);
     final recentAppsAsync = ref.watch(applicationsProvider(const {'limit': 5}));
     final userAsync = ref.watch(currentUserProvider);
-<<<<<<< HEAD
-
-=======
     
->>>>>>> origin/main
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dashboard'),
@@ -50,12 +40,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             backgroundColor: AppTheme.primaryColor,
             child: Text(
               userAsync.when(
-<<<<<<< HEAD
-                data: (user) =>
-                    (user['name'] as String? ?? 'A')[0].toUpperCase(),
-=======
                 data: (user) => (user['name'] as String? ?? 'A')[0].toUpperCase(),
->>>>>>> origin/main
                 loading: () => '',
                 error: (_, __) => '?',
               ),
@@ -84,19 +69,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   Text(
                     'Here\'s what\'s happening with your recruitment today.',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-<<<<<<< HEAD
-                          color: AppTheme.textSecondary,
-                        ),
-                  ),
-                  const SizedBox(height: 32),
-
-=======
                       color: AppTheme.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 32),
                   
->>>>>>> origin/main
                   // Stats Cards
                   metricsAsync.when(
                     data: (metrics) {
@@ -111,12 +88,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       }
 
                       return ResponsiveRowColumn(
-<<<<<<< HEAD
-                        layout: ResponsiveBreakpoints.of(context)
-                                .smallerThan(DESKTOP)
-=======
                         layout: ResponsiveBreakpoints.of(context).smallerThan(DESKTOP)
->>>>>>> origin/main
                             ? ResponsiveRowColumnType.COLUMN
                             : ResponsiveRowColumnType.ROW,
                         rowSpacing: 16,
@@ -126,12 +98,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             rowFlex: 1,
                             child: StatCard(
                               title: 'Total Applications',
-<<<<<<< HEAD
-                              value:
-                                  getMetricValue(metrics['total_applications']),
-=======
                               value: getMetricValue(metrics['total_applications']),
->>>>>>> origin/main
                               change: '+12%',
                               isPositive: true,
                               icon: Icons.assignment_outlined,
@@ -153,12 +120,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             rowFlex: 1,
                             child: StatCard(
                               title: 'Interviews Scheduled',
-<<<<<<< HEAD
-                              value: getMetricValue(
-                                  metrics['interviews_scheduled']),
-=======
                               value: getMetricValue(metrics['interviews_scheduled']),
->>>>>>> origin/main
                               change: '-3%',
                               isPositive: false,
                               icon: Icons.calendar_today_outlined,
@@ -179,20 +141,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         ],
                       );
                     },
-<<<<<<< HEAD
-                    loading: () =>
-                        const Center(child: LinearProgressIndicator()),
-                    error: (_, __) => const Text('Failed to load metrics'),
-                  ),
-                  const SizedBox(height: 32),
-
-=======
                     loading: () => const Center(child: LinearProgressIndicator()),
                     error: (_, __) => const Text('Failed to load metrics'),
                   ),
                   const SizedBox(height: 32),
                   
->>>>>>> origin/main
                   // Recruitment Pipeline
                   Card(
                     child: Padding(
@@ -209,26 +162,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             data: (stats) => PipelineWidget(
                               stages: Map<String, int>.from(stats),
                             ),
-<<<<<<< HEAD
-                            loading: () => const Center(
-                                child: CircularProgressIndicator()),
-                            error: (_, __) =>
-                                const Text('Failed to load pipeline'),
-=======
                             loading: () => const Center(child: CircularProgressIndicator()),
                             error: (_, __) => const Text('Failed to load pipeline'),
->>>>>>> origin/main
                           ),
                         ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 24),
-<<<<<<< HEAD
-
-=======
                   
->>>>>>> origin/main
                   // Recent Activity
                   Card(
                     child: Padding(
@@ -241,12 +183,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             children: [
                               Text(
                                 'Recent Applications',
-<<<<<<< HEAD
-                                style:
-                                    Theme.of(context).textTheme.headlineSmall,
-=======
                                 style: Theme.of(context).textTheme.headlineSmall,
->>>>>>> origin/main
                               ),
                               TextButton(
                                 onPressed: () {
@@ -258,55 +195,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           ),
                           const SizedBox(height: 16),
                           recentAppsAsync.when(
-<<<<<<< HEAD
-                            data: (apps) {
-                              if (apps.isEmpty) {
-                                return const Text('No recent applications');
-                              }
-                              return ListView.separated(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: apps.length,
-                                separatorBuilder: (context, index) =>
-                                    const Divider(),
-                                itemBuilder: (context, index) {
-                                  final app = apps[index];
-                                  return ListTile(
-                                    contentPadding: EdgeInsets.zero,
-                                    leading: CircleAvatar(
-                                      backgroundColor: AppTheme.primaryColor
-                                          .withOpacity(0.1),
-                                      child: Text(
-                                        (app['candidate_name'] as String? ??
-                                            'U')[0],
-                                        style: const TextStyle(
-                                          color: AppTheme.primaryColor,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                    title: Text(
-                                        app['candidate_name'] as String? ??
-                                            'Unknown'),
-                                    subtitle: Text(
-                                        app['job_title'] as String? ??
-                                            'Unknown Position'),
-                                    trailing: Chip(
-                                      label: Text(
-                                          app['status'] as String? ?? 'New'),
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 8),
-                                    ),
-                                  );
-                                },
-                              );
-                            },
-                            loading: () => const Center(
-                                child: CircularProgressIndicator()),
-                            error: (_, __) => const Text(
-                                'Failed to load recent applications'),
-                          ),
-=======
                               data: (apps) {
                                 if (apps.isEmpty) {
                                   return const Text('No recent applications');
@@ -343,7 +231,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               loading: () => const Center(child: CircularProgressIndicator()),
                               error: (_, __) => const Text('Failed to load recent applications'),
                             ),
->>>>>>> origin/main
                         ],
                       ),
                     ),
@@ -374,15 +261,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             child: Text(
               'AgenticHR',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-<<<<<<< HEAD
-                    color: AppTheme.primaryColor,
-                    fontWeight: FontWeight.bold,
-                  ),
-=======
                 color: AppTheme.primaryColor,
                 fontWeight: FontWeight.bold,
               ),
->>>>>>> origin/main
             ),
           ),
           const SizedBox(height: 32),
@@ -398,10 +279,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           const Divider(height: 32),
           _buildNavItem(Icons.analytics_outlined, 'Analytics', 9),
           _buildNavItem(Icons.settings_outlined, 'Settings', 10),
-<<<<<<< HEAD
-=======
           _buildNavItem(Icons.auto_awesome, 'AI Rankings', 11),
->>>>>>> origin/main
         ],
       ),
     );
@@ -409,11 +287,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Widget _buildNavItem(IconData icon, String label, int index) {
     final isSelected = _selectedIndex == index;
-<<<<<<< HEAD
-
-=======
     
->>>>>>> origin/main
     return ListTile(
       leading: Icon(
         icon,
@@ -463,24 +337,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 Text(
                   'Admin User',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-<<<<<<< HEAD
-                        color: Colors.white,
-                      ),
-=======
                     color: Colors.white,
                   ),
->>>>>>> origin/main
                 ),
                 Text(
                   'admin@agentichr.com',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-<<<<<<< HEAD
-                        color: Colors.white70,
-                      ),
-=======
                     color: Colors.white70,
                   ),
->>>>>>> origin/main
                 ),
               ],
             ),
@@ -503,11 +367,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       case 1:
         Navigator.pushNamed(context, '/job-requisitions');
         break;
-<<<<<<< HEAD
-      case 3:
-        Navigator.pushNamed(context, '/candidates');
-        break;
-=======
       case 2:
         Navigator.pushNamed(context, '/job-postings');
         break;
@@ -517,15 +376,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       case 4:
         Navigator.pushNamed(context, '/applications');
         break;
->>>>>>> origin/main
       case 5:
         Navigator.pushNamed(context, '/interviews');
         break;
       case 6:
         Navigator.pushNamed(context, '/offers');
         break;
-<<<<<<< HEAD
-=======
       case 7:
         Navigator.pushNamed(context, '/onboarding');
         break;
@@ -541,7 +397,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       case 11:
         Navigator.pushNamed(context, '/ai-rankings');
         break;
->>>>>>> origin/main
     }
   }
 }

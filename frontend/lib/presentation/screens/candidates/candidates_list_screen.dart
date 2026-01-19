@@ -27,8 +27,6 @@ class _CandidatesListScreenState extends ConsumerState<CandidatesListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Candidates'),
-<<<<<<< HEAD
-=======
         actions: [
           TextButton.icon(
             onPressed: () => Navigator.pushNamed(context, '/ai-rankings'),
@@ -37,7 +35,6 @@ class _CandidatesListScreenState extends ConsumerState<CandidatesListScreen> {
           ),
           const SizedBox(width: 8),
         ],
->>>>>>> origin/main
       ),
       body: Column(
         children: [
@@ -112,15 +109,11 @@ class _CandidatesListScreenState extends ConsumerState<CandidatesListScreen> {
                         ),
                         trailing: const Icon(Icons.chevron_right),
                         onTap: () {
-<<<<<<< HEAD
-                          // TODO: Navigate to candidate detail
-=======
                           Navigator.pushNamed(
                             context,
                             '/candidates/detail',
                             arguments: candidate.id,
                           );
->>>>>>> origin/main
                         },
                       ),
                     );

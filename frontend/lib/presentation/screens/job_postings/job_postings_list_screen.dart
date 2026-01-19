@@ -3,10 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:agentichr_frontend/core/theme/app_theme.dart';
 import 'package:agentichr_frontend/domain/providers/providers.dart';
 import 'application_form_screen.dart';
-<<<<<<< HEAD
-=======
 import '../applications/ranked_candidates_screen.dart';
->>>>>>> origin/main
 
 class JobPostingsListScreen extends ConsumerStatefulWidget {
   const JobPostingsListScreen({super.key});
@@ -72,47 +69,6 @@ class _JobPostingsListScreenState extends ConsumerState<JobPostingsListScreen> {
             itemCount: postings.length,
             itemBuilder: (context, index) {
               final posting = postings[index];
-<<<<<<< HEAD
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.all(16),
-                  title: Text(
-                    posting['title'] ?? 'Untitled',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 8),
-                      Text(posting['location'] ?? 'Location not specified'),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(Icons.visibility, size: 16, color: AppTheme.textSecondary),
-                          const SizedBox(width: 4),
-                          Text('${posting['views_count'] ?? 0} views'),
-                          const SizedBox(width: 16),
-                          Icon(Icons.assignment, size: 16, color: AppTheme.textSecondary),
-                          const SizedBox(width: 4),
-                          Text('${posting['applications_count'] ?? 0} applications'),
-                        ],
-                      ),
-                    ],
-                  ),
-                  trailing: Chip(
-                    label: Text(posting['status'] ?? 'Unknown'),
-                    backgroundColor: _getStatusColor(posting['status']),
-                  ),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ApplicationFormScreen(jobPosting: posting),
-                      ),
-                    );
-                  },
-=======
               final applicationsCount = posting['applications_count'] ?? 0;
               
               return Card(
@@ -201,7 +157,6 @@ class _JobPostingsListScreenState extends ConsumerState<JobPostingsListScreen> {
                       ),
                     ),
                   ],
->>>>>>> origin/main
                 ),
               );
             },

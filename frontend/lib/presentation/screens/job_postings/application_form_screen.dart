@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-import 'dart:io';
-=======
->>>>>>> origin/main
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
@@ -28,11 +24,7 @@ class _ApplicationFormScreenState extends ConsumerState<ApplicationFormScreen> {
   final _phoneController = TextEditingController();
   final _coverLetterController = TextEditingController();
   
-<<<<<<< HEAD
-  File? _resumeFile;
-=======
   PlatformFile? _resumeFile;
->>>>>>> origin/main
   bool _isSubmitting = false;
 
   @override
@@ -53,11 +45,7 @@ class _ApplicationFormScreenState extends ConsumerState<ApplicationFormScreen> {
 
     if (result != null) {
       setState(() {
-<<<<<<< HEAD
-        _resumeFile = File(result.files.single.path!);
-=======
         _resumeFile = result.files.single;
->>>>>>> origin/main
       });
     }
   }
@@ -79,36 +67,14 @@ class _ApplicationFormScreenState extends ConsumerState<ApplicationFormScreen> {
 
       // 1. Create Candidate (or check existing - API handles check)
       final candidateData = {
-<<<<<<< HEAD
-        "first_name": _firstNameController.text,
-        "last_name": _lastNameController.text,
-        "email": _emailController.text,
-        "phone": _phoneController.text,
-        // Default values for required fields
-        "status": "active",
-        "source": "Career Page"
-=======
         "first_name": _firstNameController.text.trim(),
         "last_name": _lastNameController.text.trim(),
         "email": _emailController.text.trim(),
         "phone": _phoneController.text.trim(),
->>>>>>> origin/main
       };
       
       final candidate = await candidateRepo.createCandidate(candidateData);
 
-<<<<<<< HEAD
-      // 2. Upload Resume
-      await candidateRepo.uploadResume(candidate.id.toString(), _resumeFile!);
-
-      // 3. Trigger Resume Parsing (Background or Explicit)
-      try {
-          await candidateRepo.parseResume(candidate.id.toString());
-      } catch (e) {
-          // Ignore parsing errors, it shouldn't block application
-          print("Resume parsing failed: $e");
-      }
-=======
       // TODO: Upload Resume - Requires web-compatible file upload implementation
       // await candidateRepo.uploadResume(candidate.id.toString(), _resumeFile!);
 
@@ -119,7 +85,6 @@ class _ApplicationFormScreenState extends ConsumerState<ApplicationFormScreen> {
       //     // Ignore parsing errors, it shouldn't block application
       //     print("Resume parsing failed: $e");
       // }
->>>>>>> origin/main
 
       // 4. Submit Application
       final applicationData = {
@@ -227,11 +192,7 @@ class _ApplicationFormScreenState extends ConsumerState<ApplicationFormScreen> {
                     if (_resumeFile != null) ...[
                         Icon(Icons.description, size: 48, color: AppTheme.primaryColor),
                         const SizedBox(height: 8),
-<<<<<<< HEAD
-                        Text(_resumeFile!.path.split(Platform.pathSeparator).last),
-=======
                         Text(_resumeFile!.name),
->>>>>>> origin/main
                         const SizedBox(height: 8),
                         TextButton(
                             onPressed: _pickResume,

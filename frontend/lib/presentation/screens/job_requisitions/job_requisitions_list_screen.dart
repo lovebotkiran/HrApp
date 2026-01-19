@@ -1,8 +1,4 @@
 import 'package:flutter/material.dart';
-<<<<<<< HEAD
-import 'package:dio/dio.dart';
-=======
->>>>>>> origin/main
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:agentichr_frontend/core/theme/app_theme.dart';
 import 'package:agentichr_frontend/domain/providers/providers.dart';
@@ -14,19 +10,10 @@ class JobRequisitionsListScreen extends ConsumerStatefulWidget {
   const JobRequisitionsListScreen({super.key});
 
   @override
-<<<<<<< HEAD
-  ConsumerState<JobRequisitionsListScreen> createState() =>
-      _JobRequisitionsListScreenState();
-}
-
-class _JobRequisitionsListScreenState
-    extends ConsumerState<JobRequisitionsListScreen> {
-=======
   ConsumerState<JobRequisitionsListScreen> createState() => _JobRequisitionsListScreenState();
 }
 
 class _JobRequisitionsListScreenState extends ConsumerState<JobRequisitionsListScreen> {
->>>>>>> origin/main
   String? _selectedStatus;
   String _searchQuery = '';
   final _searchController = TextEditingController();
@@ -40,14 +27,8 @@ class _JobRequisitionsListScreenState extends ConsumerState<JobRequisitionsListS
   @override
   Widget build(BuildContext context) {
     final requisitionsAsync = ref.watch(jobRequisitionsProvider(
-<<<<<<< HEAD
-        JobRequisitionFilter(
-            status: _selectedStatus,
-            search: _searchQuery.isEmpty ? null : _searchQuery)));
-=======
       JobRequisitionFilter(status: _selectedStatus, search: _searchQuery.isEmpty ? null : _searchQuery)
     ));
->>>>>>> origin/main
 
     return Scaffold(
       appBar: AppBar(
@@ -63,12 +44,7 @@ class _JobRequisitionsListScreenState extends ConsumerState<JobRequisitionsListS
             itemBuilder: (context) => [
               const PopupMenuItem(value: 'All', child: Text('All')),
               const PopupMenuItem(value: 'draft', child: Text('Draft')),
-<<<<<<< HEAD
-              const PopupMenuItem(
-                  value: 'pending_approval', child: Text('Pending Approval')),
-=======
               const PopupMenuItem(value: 'pending_approval', child: Text('Pending Approval')),
->>>>>>> origin/main
               const PopupMenuItem(value: 'approved', child: Text('Approved')),
               const PopupMenuItem(value: 'rejected', child: Text('Rejected')),
             ],
@@ -85,12 +61,7 @@ class _JobRequisitionsListScreenState extends ConsumerState<JobRequisitionsListS
                 hintText: 'Search by title, department, or ID...',
                 prefixIcon: Icon(Icons.search),
                 border: OutlineInputBorder(),
-<<<<<<< HEAD
-                contentPadding:
-                    EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-=======
                 contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
->>>>>>> origin/main
               ),
               onChanged: (value) {
                 setState(() {
@@ -107,12 +78,7 @@ class _JobRequisitionsListScreenState extends ConsumerState<JobRequisitionsListS
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-<<<<<<< HEAD
-                        Icon(Icons.work_outline,
-                            size: 64, color: AppTheme.textSecondary),
-=======
                         Icon(Icons.work_outline, size: 64, color: AppTheme.textSecondary),
->>>>>>> origin/main
                         const SizedBox(height: 16),
                         Text(
                           'No requisitions found',
@@ -121,16 +87,9 @@ class _JobRequisitionsListScreenState extends ConsumerState<JobRequisitionsListS
                         const SizedBox(height: 8),
                         Text(
                           'Create your first job requisition',
-<<<<<<< HEAD
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: AppTheme.textSecondary,
-                                  ),
-=======
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 color: AppTheme.textSecondary,
                               ),
->>>>>>> origin/main
                         ),
                       ],
                     ),
@@ -163,39 +122,6 @@ class _JobRequisitionsListScreenState extends ConsumerState<JobRequisitionsListS
                               ),
                           ],
                         ),
-<<<<<<< HEAD
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: Icon(Icons.send_rounded,
-                                  color: Color(0xFF0077B5)), // LinkedIn Blue
-                              tooltip: 'Share to LinkedIn',
-                              onPressed: req.id != null
-                                  ? () => _shareToLinkedIn(
-                                      context, req.id!, req.title)
-                                  : null,
-                            ),
-                            const SizedBox(width: 8),
-                            Chip(
-                              label: Text(_formatStatus(req.status)),
-                              backgroundColor: _getStatusColor(req.status),
-                            ),
-                          ],
-                        ),
-                        onTap: () {
-                          final status = req.status.toLowerCase();
-                          if (status == 'draft' ||
-                              status == 'pending_approval') {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    CreateJobRequisitionScreen(
-                                        requisition: req),
-                              ),
-                            );
-=======
                         trailing: Chip(
                           label: Text(_formatStatus(req.status)),
                           backgroundColor: _getStatusColor(req.status),
@@ -211,7 +137,6 @@ class _JobRequisitionsListScreenState extends ConsumerState<JobRequisitionsListS
                             );
                           } else if (status == 'pending_approval') {
                             _showApprovalDialog(req);
->>>>>>> origin/main
                           } else {
                             // TODO: Navigate to detail screen for non-draft items
                           }
@@ -226,12 +151,7 @@ class _JobRequisitionsListScreenState extends ConsumerState<JobRequisitionsListS
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-<<<<<<< HEAD
-                    Icon(Icons.error_outline,
-                        size: 64, color: AppTheme.errorColor),
-=======
                     Icon(Icons.error_outline, size: 64, color: AppTheme.errorColor),
->>>>>>> origin/main
                     const SizedBox(height: 16),
                     Text(
                       'Error loading requisitions',
@@ -248,15 +168,8 @@ class _JobRequisitionsListScreenState extends ConsumerState<JobRequisitionsListS
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
                       onPressed: () => ref.refresh(jobRequisitionsProvider(
-<<<<<<< HEAD
-                          JobRequisitionFilter(
-                              status: _selectedStatus,
-                              search:
-                                  _searchQuery.isEmpty ? null : _searchQuery))),
-=======
                         JobRequisitionFilter(status: _selectedStatus, search: _searchQuery.isEmpty ? null : _searchQuery)
                       )),
->>>>>>> origin/main
                       icon: const Icon(Icons.refresh),
                       label: const Text('Retry'),
                     ),
@@ -277,59 +190,6 @@ class _JobRequisitionsListScreenState extends ConsumerState<JobRequisitionsListS
     );
   }
 
-<<<<<<< HEAD
-  Future<void> _shareToLinkedIn(
-      BuildContext context, String requisitionId, String title) async {
-    try {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sharing to LinkedIn...')),
-      );
-
-      final apiClient = ref.read(apiClientProvider);
-      final response = await apiClient.shareRequisitionLinkedIn(requisitionId);
-
-      if (mounted) {
-        if (response.response.statusCode == 200 ||
-            response.response.statusCode == 201) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Successfully shared "$title" to LinkedIn!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                  'Failed to share to LinkedIn: ${response.response.statusMessage ?? "Unknown error"}'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      String errorMessage = 'Error sharing to LinkedIn: $e';
-      if (e is DioException) {
-        if (e.response?.data is Map && e.response?.data['detail'] != null) {
-          errorMessage = 'LinkedIn Error: ${e.response?.data['detail']}';
-        } else if (e.response?.statusMessage != null) {
-          errorMessage = 'Error: ${e.response?.statusMessage}';
-        } else if (e.message != null) {
-          errorMessage = e.message!;
-        }
-      }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-          ),
-        );
-      }
-    }
-=======
   Future<void> _showApprovalDialog(JobRequisition req) async {
     final commentsController = TextEditingController();
     bool isProcessing = false;
@@ -425,7 +285,6 @@ class _JobRequisitionsListScreenState extends ConsumerState<JobRequisitionsListS
         ),
       ),
     );
->>>>>>> origin/main
   }
 
   String _formatDate(DateTime date) {
