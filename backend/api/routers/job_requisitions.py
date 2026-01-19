@@ -15,10 +15,13 @@ from application.schemas import (
     MessageResponse,
     PaginatedResponse
 )
+from core.config import settings
 from application.services.ai_service import AIService
+from application.services.linkedin_service import LinkedInService
 
 router = APIRouter()
 ai_service = AIService()
+linkedin_service = LinkedInService()
 
 
 @router.post("/", response_model=JobRequisitionResponse, status_code=status.HTTP_201_CREATED)
@@ -107,7 +110,8 @@ async def list_job_requisitions(
     # For non-admin users, show only their department's requisitions
     # This can be enhanced with proper RBAC
     
-    requisitions = query.offset(skip).limit(limit).all()
+    # Sort by created_at descending
+    requisitions = query.order_by(JobRequisition.created_at.desc()).offset(skip).limit(limit).all()
     return requisitions
 
 
@@ -327,5 +331,63 @@ async def generate_job_description(
     
     return {
         "message": "Job description generated successfully",
+        "success": True
+    }
+
+
+@router.post("/{requisition_id}/share-linkedin", response_model=MessageResponse)
+async def share_requisition_linkedin(
+    requisition_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Share an approved job requisition to LinkedIn.
+    """
+    requisition = db.query(JobRequisition).filter(JobRequisition.id == requisition_id).first()
+    
+    if not requisition:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job requisition not found"
+        )
+    
+    if requisition.status != "approved":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Can only share approved requisitions"
+        )
+        
+    if not requisition.job_description:
+         raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Job requisition must have a description to be shared"
+        )
+
+    if not settings.LINKEDIN_ENABLED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="LinkedIn sharing is currently disabled in settings"
+        )
+
+    # In a real app, this URL would point to the public job application page
+    apply_url = f"{settings.FRONTEND_URL}/jobs/{requisition_id}"
+    
+    result = await linkedin_service.share_job(
+        title=requisition.title,
+        description=requisition.job_description,
+        apply_url=apply_url
+    )
+    
+    if not result.get("success"):
+        # If we have a specific status code from LinkedIn (like 401), use it
+        error_status = result.get("status_code", status.HTTP_500_INTERNAL_SERVER_ERROR)
+        raise HTTPException(
+            status_code=error_status,
+            detail=result.get("message", "Failed to share to LinkedIn")
+        )
+        
+    return {
+        "message": "Successfully shared to LinkedIn",
         "success": True
     }

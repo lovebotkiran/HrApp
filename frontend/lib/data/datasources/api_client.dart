@@ -15,7 +15,7 @@ part 'api_client.g.dart';
 Dio createDio() {
   final dio = Dio(
     BaseOptions(
-      baseUrl: 'http://127.0.0.1:8000/api/v1',
+      baseUrl: 'http://localhost:8000/api/v1',
       connectTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 30),
       headers: {
@@ -40,14 +40,14 @@ Dio createDio() {
         // Handle 401 errors (token expired)
         if (error.response?.statusCode == 401) {
           final refreshToken = await TokenStorage.getRefreshToken();
-          
+
           if (refreshToken != null) {
             try {
               // Create a temporary Dio instance for the refresh request
               // to avoid infinite loops and interceptor conflicts
               final refreshDio = Dio(
                 BaseOptions(
-                  baseUrl: 'http://127.0.0.1:8000/api/v1',
+                  baseUrl: 'http://localhost:8000/api/v1',
                   headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
@@ -56,39 +56,39 @@ Dio createDio() {
               );
 
               // Call refresh endpoint
-              final response = await refreshDio.post(
-                '/auth/refresh', 
-                queryParameters: {'refresh_token': refreshToken}
-              );
+              final response = await refreshDio.post('/auth/refresh',
+                  queryParameters: {'refresh_token': refreshToken});
 
               if (response.statusCode == 200) {
                 // Parse new tokens
                 final data = response.data;
                 final newAccessToken = data['access_token'];
                 final newRefreshToken = data['refresh_token'];
-                
+
                 // Save new tokens
                 await TokenStorage.saveTokens(
                   accessToken: newAccessToken,
                   refreshToken: newRefreshToken,
                 );
-                
+
                 // Retry the original request with new token
                 final options = error.requestOptions;
                 options.headers['Authorization'] = 'Bearer $newAccessToken';
-                
+
                 final cloneReq = await dio.fetch(options);
                 return handler.resolve(cloneReq);
               }
             } catch (e) {
               // Refresh failed - clean up
               await TokenStorage.clearTokens();
-              navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
+              navigatorKey.currentState
+                  ?.pushNamedAndRemoveUntil('/login', (route) => false);
             }
           } else {
             // No refresh token - clean up
             await TokenStorage.clearTokens();
-            navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
+            navigatorKey.currentState
+                ?.pushNamedAndRemoveUntil('/login', (route) => false);
           }
         }
         return handler.next(error);
@@ -165,6 +165,9 @@ abstract class ApiClient {
   @POST('/job-requisitions/{id}/generate-jd')
   Future<JobRequisition> generateJobDescription(@Path('id') String id);
 
+  @POST('/job-requisitions/{id}/share-linkedin')
+  Future<HttpResponse<dynamic>> shareToLinkedIn(@Path('id') String id);
+
   // ============================================================================
   // Job Postings Endpoints - Using HttpResponse for dynamic data
   // ============================================================================
@@ -181,7 +184,8 @@ abstract class ApiClient {
   Future<HttpResponse<dynamic>> getJobPosting(@Path('id') String id);
 
   @POST('/job-postings/')
-  Future<HttpResponse<dynamic>> createJobPosting(@Body() Map<String, dynamic> data);
+  Future<HttpResponse<dynamic>> createJobPosting(
+      @Body() Map<String, dynamic> data);
 
   @PUT('/job-postings/{id}')
   Future<HttpResponse<dynamic>> updateJobPosting(
@@ -260,7 +264,8 @@ abstract class ApiClient {
   Future<HttpResponse<dynamic>> getApplication(@Path('id') String id);
 
   @POST('/applications/')
-  Future<HttpResponse<dynamic>> submitApplication(@Body() Map<String, dynamic> data);
+  Future<HttpResponse<dynamic>> submitApplication(
+      @Body() Map<String, dynamic> data);
 
   @PUT('/applications/{id}/status')
   Future<HttpResponse<dynamic>> updateApplicationStatus(
@@ -394,13 +399,16 @@ abstract class ApiClient {
   // ============================================================================
 
   @GET('/onboarding/{offer_id}/status')
-  Future<HttpResponse<dynamic>> getOnboardingStatus(@Path('offer_id') String offerId);
+  Future<HttpResponse<dynamic>> getOnboardingStatus(
+      @Path('offer_id') String offerId);
 
   @POST('/onboarding/tasks')
-  Future<HttpResponse<dynamic>> createOnboardingTask(@Body() Map<String, dynamic> data);
+  Future<HttpResponse<dynamic>> createOnboardingTask(
+      @Body() Map<String, dynamic> data);
 
   @POST('/onboarding/verify')
-  Future<HttpResponse<dynamic>> verifyDocument(@Body() Map<String, dynamic> data);
+  Future<HttpResponse<dynamic>> verifyDocument(
+      @Body() Map<String, dynamic> data);
 
   // ============================================================================
   // Referrals Endpoints - Using HttpResponse for dynamic data
@@ -417,7 +425,8 @@ abstract class ApiClient {
   Future<HttpResponse<dynamic>> getReferralStatus(@Path('id') String id);
 
   @POST('/referrals/')
-  Future<HttpResponse<dynamic>> createReferral(@Body() Map<String, dynamic> data);
+  Future<HttpResponse<dynamic>> createReferral(
+      @Body() Map<String, dynamic> data);
 
   @POST('/referrals/{id}/approve-bonus')
   Future<HttpResponse<dynamic>> approveReferralBonus(
@@ -442,5 +451,6 @@ abstract class ApiClient {
   Future<HttpResponse<dynamic>> getPortalMessages();
 
   @POST('/portal/messages')
-  Future<HttpResponse<dynamic>> sendPortalMessage(@Body() Map<String, dynamic> data);
+  Future<HttpResponse<dynamic>> sendPortalMessage(
+      @Body() Map<String, dynamic> data);
 }

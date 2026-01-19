@@ -10,10 +10,12 @@ class JobRequisitionsListScreen extends ConsumerStatefulWidget {
   const JobRequisitionsListScreen({super.key});
 
   @override
-  ConsumerState<JobRequisitionsListScreen> createState() => _JobRequisitionsListScreenState();
+  ConsumerState<JobRequisitionsListScreen> createState() =>
+      _JobRequisitionsListScreenState();
 }
 
-class _JobRequisitionsListScreenState extends ConsumerState<JobRequisitionsListScreen> {
+class _JobRequisitionsListScreenState
+    extends ConsumerState<JobRequisitionsListScreen> {
   String? _selectedStatus;
   String _searchQuery = '';
   final _searchController = TextEditingController();
@@ -27,8 +29,9 @@ class _JobRequisitionsListScreenState extends ConsumerState<JobRequisitionsListS
   @override
   Widget build(BuildContext context) {
     final requisitionsAsync = ref.watch(jobRequisitionsProvider(
-      JobRequisitionFilter(status: _selectedStatus, search: _searchQuery.isEmpty ? null : _searchQuery)
-    ));
+        JobRequisitionFilter(
+            status: _selectedStatus,
+            search: _searchQuery.isEmpty ? null : _searchQuery)));
 
     return Scaffold(
       appBar: AppBar(
@@ -44,7 +47,8 @@ class _JobRequisitionsListScreenState extends ConsumerState<JobRequisitionsListS
             itemBuilder: (context) => [
               const PopupMenuItem(value: 'All', child: Text('All')),
               const PopupMenuItem(value: 'draft', child: Text('Draft')),
-              const PopupMenuItem(value: 'pending_approval', child: Text('Pending Approval')),
+              const PopupMenuItem(
+                  value: 'pending_approval', child: Text('Pending Approval')),
               const PopupMenuItem(value: 'approved', child: Text('Approved')),
               const PopupMenuItem(value: 'rejected', child: Text('Rejected')),
             ],
@@ -55,19 +59,39 @@ class _JobRequisitionsListScreenState extends ConsumerState<JobRequisitionsListS
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: const InputDecoration(
-                hintText: 'Search by title, department, or ID...',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-              },
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search by title, department, or ID...',
+                  prefixIcon:
+                      const Icon(Icons.search, color: AppTheme.textSecondary),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                  });
+                },
+              ),
             ),
           ),
           Expanded(
@@ -78,7 +102,8 @@ class _JobRequisitionsListScreenState extends ConsumerState<JobRequisitionsListS
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.work_outline, size: 64, color: AppTheme.textSecondary),
+                        Icon(Icons.work_outline,
+                            size: 64, color: AppTheme.textSecondary),
                         const SizedBox(height: 16),
                         Text(
                           'No requisitions found',
@@ -87,9 +112,10 @@ class _JobRequisitionsListScreenState extends ConsumerState<JobRequisitionsListS
                         const SizedBox(height: 8),
                         Text(
                           'Create your first job requisition',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: AppTheme.textSecondary,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: AppTheme.textSecondary,
+                                  ),
                         ),
                       ],
                     ),
@@ -103,44 +129,101 @@ class _JobRequisitionsListScreenState extends ConsumerState<JobRequisitionsListS
                     final req = requisitions[index];
                     return Card(
                       margin: const EdgeInsets.only(bottom: 12),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.all(16),
-                        title: Text(
-                          req.title,
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 8),
-                            Text(req.department),
-                            const SizedBox(height: 4),
-                            if (req.createdAt != null)
-                              Text(
-                                'Created: ${_formatDate(req.createdAt!)}',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                          ],
-                        ),
-                        trailing: Chip(
-                          label: Text(_formatStatus(req.status)),
-                          backgroundColor: _getStatusColor(req.status),
-                        ),
-                        onTap: () {
-                          final status = req.status.toLowerCase();
-                          if (status == 'draft') {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => CreateJobRequisitionScreen(requisition: req),
-                              ),
-                            );
-                          } else if (status == 'pending_approval') {
-                            _showApprovalDialog(req);
-                          } else {
-                            // TODO: Navigate to detail screen for non-draft items
-                          }
-                        },
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ListTile(
+                            contentPadding: const EdgeInsets.all(16),
+                            title: Text(
+                              req.title,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 8),
+                                Text(
+                                  req.department,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(
+                                        color: AppTheme.textSecondary,
+                                      ),
+                                ),
+                                const SizedBox(height: 4),
+                                if (req.createdAt != null)
+                                  Text(
+                                    'Created: ${_formatDate(req.createdAt!)}',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          color: AppTheme.textSecondary
+                                              .withOpacity(0.7),
+                                        ),
+                                  ),
+                              ],
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (req.status.toLowerCase() == 'approved')
+                                  IconButton(
+                                    onPressed: () => _shareToLinkedIn(req),
+                                    icon: const Icon(Icons.send,
+                                        color: Color(0xFF0077B5)),
+                                    tooltip: 'Share to LinkedIn',
+                                  ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        _getStatusBackgroundColor(req.status),
+                                    borderRadius: BorderRadius.circular(25),
+                                    border: Border.all(
+                                      color: _getStatusColor(req.status)
+                                          .withOpacity(0.5),
+                                      width: 1.2,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    _formatStatus(req.status),
+                                    style: TextStyle(
+                                      color: _getStatusColor(req.status),
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            onTap: () {
+                              final status = req.status.toLowerCase();
+                              if (status == 'draft') {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        CreateJobRequisitionScreen(
+                                            requisition: req),
+                                  ),
+                                );
+                              } else if (status == 'pending_approval') {
+                                _showApprovalDialog(req);
+                              } else {
+                                // TODO: Navigate to detail screen for non-draft items
+                              }
+                            },
+                          ),
+                        ],
                       ),
                     );
                   },
@@ -151,7 +234,8 @@ class _JobRequisitionsListScreenState extends ConsumerState<JobRequisitionsListS
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.error_outline, size: 64, color: AppTheme.errorColor),
+                    Icon(Icons.error_outline,
+                        size: 64, color: AppTheme.errorColor),
                     const SizedBox(height: 16),
                     Text(
                       'Error loading requisitions',
@@ -168,8 +252,10 @@ class _JobRequisitionsListScreenState extends ConsumerState<JobRequisitionsListS
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
                       onPressed: () => ref.refresh(jobRequisitionsProvider(
-                        JobRequisitionFilter(status: _selectedStatus, search: _searchQuery.isEmpty ? null : _searchQuery)
-                      )),
+                          JobRequisitionFilter(
+                              status: _selectedStatus,
+                              search:
+                                  _searchQuery.isEmpty ? null : _searchQuery))),
                       icon: const Icon(Icons.refresh),
                       label: const Text('Retry'),
                     ),
@@ -188,6 +274,45 @@ class _JobRequisitionsListScreenState extends ConsumerState<JobRequisitionsListS
         label: const Text('New Requisition'),
       ),
     );
+  }
+
+  Future<void> _shareToLinkedIn(JobRequisition req) async {
+    try {
+      final repo = ref.read(jobRequisitionRepositoryProvider);
+      await repo.shareOnLinkedIn(req.id!);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Requisition shared to LinkedIn successfully'),
+            backgroundColor: AppTheme.successColor,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        String message = 'Error sharing to LinkedIn: $e';
+        if (e.toString().contains('401')) {
+          message =
+              'LinkedIn Authentication Failed (401). Please check if your access token is valid and configured in the backend .env file.';
+        } else if (e.toString().contains('400')) {
+          message =
+              'LinkedIn sharing is disabled or JD is missing. Please check requisition details and settings.';
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: AppTheme.errorColor,
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'Close',
+              textColor: Colors.white,
+              onPressed: () {},
+            ),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _showApprovalDialog(JobRequisition req) async {
@@ -228,57 +353,69 @@ class _JobRequisitionsListScreenState extends ConsumerState<JobRequisitionsListS
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: isProcessing ? null : () async {
-                setDialogState(() => isProcessing = true);
-                try {
-                  final repo = ref.read(jobRequisitionRepositoryProvider);
-                  await repo.approveRequisition(req.id!, {
-                    'status': 'rejected',
-                    'comments': commentsController.text,
-                  });
-                  if (mounted) {
-                    Navigator.pop(context);
-                    ref.refresh(jobRequisitionsProvider(JobRequisitionFilter()));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Requisition rejected')),
-                    );
-                  }
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e')),
-                  );
-                } finally {
-                  setDialogState(() => isProcessing = false);
-                }
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.errorColor, foregroundColor: Colors.white),
+              onPressed: isProcessing
+                  ? null
+                  : () async {
+                      setDialogState(() => isProcessing = true);
+                      try {
+                        final repo = ref.read(jobRequisitionRepositoryProvider);
+                        await repo.approveRequisition(req.id!, {
+                          'status': 'rejected',
+                          'comments': commentsController.text,
+                        });
+                        if (mounted) {
+                          Navigator.pop(context);
+                          ref.refresh(
+                              jobRequisitionsProvider(JobRequisitionFilter()));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('Requisition rejected')),
+                          );
+                        }
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Error: $e')),
+                        );
+                      } finally {
+                        setDialogState(() => isProcessing = false);
+                      }
+                    },
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.errorColor,
+                  foregroundColor: Colors.white),
               child: const Text('Reject'),
             ),
             ElevatedButton(
-              onPressed: isProcessing ? null : () async {
-                setDialogState(() => isProcessing = true);
-                try {
-                  final repo = ref.read(jobRequisitionRepositoryProvider);
-                  await repo.approveRequisition(req.id!, {
-                    'status': 'approved',
-                    'comments': commentsController.text,
-                  });
-                  if (mounted) {
-                    Navigator.pop(context);
-                    ref.refresh(jobRequisitionsProvider(JobRequisitionFilter()));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Requisition approved')),
-                    );
-                  }
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e')),
-                  );
-                } finally {
-                  setDialogState(() => isProcessing = false);
-                }
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.successColor, foregroundColor: Colors.white),
+              onPressed: isProcessing
+                  ? null
+                  : () async {
+                      setDialogState(() => isProcessing = true);
+                      try {
+                        final repo = ref.read(jobRequisitionRepositoryProvider);
+                        await repo.approveRequisition(req.id!, {
+                          'status': 'approved',
+                          'comments': commentsController.text,
+                        });
+                        if (mounted) {
+                          Navigator.pop(context);
+                          ref.refresh(
+                              jobRequisitionsProvider(JobRequisitionFilter()));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('Requisition approved')),
+                          );
+                        }
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Error: $e')),
+                        );
+                      } finally {
+                        setDialogState(() => isProcessing = false);
+                      }
+                    },
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.successColor,
+                  foregroundColor: Colors.white),
               child: const Text('Approve'),
             ),
           ],
@@ -311,15 +448,30 @@ class _JobRequisitionsListScreenState extends ConsumerState<JobRequisitionsListS
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'draft':
-        return AppTheme.textSecondary.withValues(alpha: 0.2);
+        return Colors.grey.shade600;
       case 'pending_approval':
-        return AppTheme.warningColor.withValues(alpha: 0.2);
+        return const Color(0xFFD97706); // Amber 600
       case 'approved':
-        return AppTheme.successColor.withValues(alpha: 0.2);
+        return const Color(0xFF059669); // Emerald 600
       case 'rejected':
-        return AppTheme.errorColor.withValues(alpha: 0.2);
+        return const Color(0xFFDC2626); // Red 600
       default:
-        return AppTheme.primaryColor.withValues(alpha: 0.2);
+        return AppTheme.primaryColor;
+    }
+  }
+
+  Color _getStatusBackgroundColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'draft':
+        return Colors.grey.shade50;
+      case 'pending_approval':
+        return const Color(0xFFFFFBEB); // Amber 50
+      case 'approved':
+        return const Color(0xFFECFDF5); // Emerald 50
+      case 'rejected':
+        return const Color(0xFFFEF2F2); // Red 50
+      default:
+        return AppTheme.primaryColor.withOpacity(0.1);
     }
   }
 }

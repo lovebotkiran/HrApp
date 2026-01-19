@@ -91,13 +91,18 @@ class AIService:
         Required Skills: {', '.join(skills)}
         Experience Level: {experience_min} to {experience_max} years
         
-        Structure the JD with:
-        1. About the Role
-        2. Key Responsibilities
-        3. Tech Stack / Requirements
-        4. What We Offer
+        Structure the JD with exactly these headers and markers for LinkedIn formatting:
+        - Use # for main section headers (e.g., # About the Role)
+        - Use ## for bullet points or list items (e.g., ## Proficiency in Python)
+        - Close sections with a newline.
         
-        Tone: Modern, exciting, professional.
+        Sections to include:
+        1. # About the Role
+        2. # Key Responsibilities
+        3. # Requirements
+        4. # What We Offer
+        
+        Tone: Professional, engaging, and modern.
         """
         return self.llm.invoke(prompt)
 

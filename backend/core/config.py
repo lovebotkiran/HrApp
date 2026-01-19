@@ -63,6 +63,8 @@ class Settings(BaseSettings):
     LINKEDIN_ENABLED: bool = False
     LINKEDIN_CLIENT_ID: str = ""
     LINKEDIN_CLIENT_SECRET: str = ""
+    LINKEDIN_ACCESS_TOKEN: str = ""
+    LINKEDIN_ORGANIZATION_URN: str = ""
     
     # AI
     AI_MODEL_PATH: str = "./models"
@@ -80,6 +82,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "AgenticHR"
     APP_VERSION: str = "1.0.0"
     API_PREFIX: str = "/api/v1"
+    FRONTEND_URL: str = "http://localhost:8080"
     DEBUG: bool = True
     
     @property

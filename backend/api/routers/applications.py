@@ -84,10 +84,23 @@ async def submit_application(
     # Update job posting application count
     job_posting.applications_count += 1
     
-    # TODO: Calculate AI match score
-    # For now, set a placeholder
-    new_application.ai_match_score = 75.0
-    new_application.ai_match_reasoning = "Good match based on skills and experience"
+    # Calculate AI match score if candidate has parsed data
+    if candidate.resume_parsed_data and job_posting.description:
+        try:
+            result = await ai_service.rank_candidate(
+                job_description=job_posting.description,
+                candidate_profile_json=candidate.resume_parsed_data
+            )
+            new_application.ai_match_score = result.get("score", 0)
+            new_application.ai_match_reasoning = result.get("reasoning", "AI calculated score")
+        except Exception as e:
+            logger.error(f"Error calculating AI match score: {e}")
+            new_application.ai_match_score = 0
+            new_application.ai_match_reasoning = f"AI Error: {str(e)}"
+    else:
+        # For now, set a placeholder if no data available
+        new_application.ai_match_score = 0
+        new_application.ai_match_reasoning = "Awaiting resume parsing for AI matching"
     
     db.commit()
     db.refresh(new_application)
@@ -181,7 +194,9 @@ async def update_application_status(
     application.status = status_data.status
     db.commit()
     
-    # TODO: Send notification to candidate
+    # Send notification to candidate
+    logger.info(f"NOTIFICATION: Application {application_id} status updated to {status_data.status} for candidate {application.candidate_id}")
+    # TODO: Implement real email/SMS notification service
     
     return {
         "message": f"Application status updated to {status_data.status}",
@@ -242,7 +257,9 @@ async def reject_application(
     application.status = "rejected"
     db.commit()
     
-    # TODO: Send rejection email to candidate
+    # Send rejection email to candidate
+    logger.info(f"NOTIFICATION: Sending rejection email to candidate {application.candidate_id} for application {application_id}. Reason: {reason}")
+    # TODO: Implement real email service
     
     return {
         "message": "Application rejected",

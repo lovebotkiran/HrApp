@@ -22,7 +22,8 @@ class OnboardingListScreen extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.people_outline, size: 64, color: AppTheme.textSecondary),
+                  Icon(Icons.people_outline,
+                      size: 64, color: AppTheme.textSecondary),
                   const SizedBox(height: 16),
                   Text(
                     'No candidates in onboarding',
@@ -45,7 +46,7 @@ class OnboardingListScreen extends ConsumerWidget {
             itemCount: offers.length,
             itemBuilder: (context, index) {
               final offer = offers[index];
-              // We can fetch detailed status for each item if needed, 
+              // We can fetch detailed status for each item if needed,
               // but for list view we might just show basic info or fetch status asynchronously
               return _OnboardingCard(
                 offerId: offer.id!,
@@ -91,7 +92,8 @@ class _OnboardingCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final statusAsync = ref.watch(onboardingStatusProvider(offerId));
-    final applicationAsync = ref.watch(applicationDetailProvider(applicationId));
+    final applicationAsync =
+        ref.watch(applicationDetailProvider(applicationId));
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -100,7 +102,8 @@ class _OnboardingCard extends ConsumerWidget {
         child: statusAsync.when(
           data: (status) {
             final progress = (status['progress'] as num?)?.toDouble() ?? 0.0;
-            final pendingTasks = (status['pending_tasks'] as num?)?.toInt() ?? 0;
+            final pendingTasks =
+                (status['pending_tasks'] as num?)?.toInt() ?? 0;
             final statusText = status['status'] as String? ?? 'In Progress';
 
             return Column(
@@ -108,13 +111,17 @@ class _OnboardingCard extends ConsumerWidget {
               children: [
                 applicationAsync.when(
                   data: (application) {
-                    final candidateName = application['candidate_name'] as String? ?? 'Unknown Candidate';
-                    final position = application['job_title'] as String? ?? 'Unknown Position';
-                    
+                    final candidateName =
+                        application['candidate_name'] as String? ??
+                            'Unknown Candidate';
+                    final position = application['job_title'] as String? ??
+                        'Unknown Position';
+
                     return Row(
                       children: [
                         CircleAvatar(
-                          backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+                          backgroundColor:
+                              AppTheme.primaryColor.withOpacity(0.1),
                           child: Text(
                             candidateName.isNotEmpty ? candidateName[0] : '?',
                             style: const TextStyle(
@@ -134,7 +141,10 @@ class _OnboardingCard extends ConsumerWidget {
                               ),
                               Text(
                                 position,
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
                                       color: AppTheme.textSecondary,
                                     ),
                               ),
@@ -143,14 +153,16 @@ class _OnboardingCard extends ConsumerWidget {
                         ),
                         Chip(
                           label: Text(statusText),
-                          backgroundColor: AppTheme.warningColor.withOpacity(0.2),
+                          backgroundColor:
+                              AppTheme.warningColor.withOpacity(0.2),
                         ),
                       ],
                     );
                   },
                   loading: () => const Row(
                     children: [
-                      CircleAvatar(child: CircularProgressIndicator(strokeWidth: 2)),
+                      CircleAvatar(
+                          child: CircularProgressIndicator(strokeWidth: 2)),
                       SizedBox(width: 12),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -179,7 +191,10 @@ class _OnboardingCard extends ConsumerWidget {
                               ),
                               Text(
                                 '${(progress * 100).toInt()}%',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
                                       fontWeight: FontWeight.bold,
                                     ),
                               ),
@@ -189,7 +204,8 @@ class _OnboardingCard extends ConsumerWidget {
                           LinearProgressIndicator(
                             value: progress,
                             backgroundColor: AppTheme.borderColor,
-                            valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                                AppTheme.primaryColor),
                           ),
                         ],
                       ),
@@ -199,7 +215,10 @@ class _OnboardingCard extends ConsumerWidget {
                       children: [
                         Text(
                           '$pendingTasks',
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(
                                 color: AppTheme.primaryColor,
                               ),
                         ),

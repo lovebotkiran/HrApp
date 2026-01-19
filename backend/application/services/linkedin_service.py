@@ -99,7 +99,12 @@ class LinkedInService:
                         return {"success": True, "data": response.json() if response.text else {}, "message": "Posted to personal feed (organization access denied)"}
 
                 logger.error(f"LinkedIn API error {response.status_code}: {response.text}")
-                return {"success": False, "message": f"LinkedIn Error: {response.status_code}", "detail": response.text}
+                return {
+                    "success": False, 
+                    "message": f"LinkedIn Error: {response.status_code}", 
+                    "status_code": response.status_code,
+                    "detail": response.text
+                }
                     
         except Exception as e:
             logger.error(f"Error sharing to LinkedIn: {e}")
@@ -201,7 +206,8 @@ class LinkedInService:
                     f"{self.api_url}/me",
                     headers={
                         "Authorization": f"Bearer {self.access_token}",
-                        "X-Restli-Protocol-Version": "2.0.0"
+                        "X-Restli-Protocol-Version": "2.0.0",
+                        "LinkedIn-Version": "202401"
                     }
                 )
                 if response.status_code == 200:

@@ -226,11 +226,14 @@ async def upload_resume(
     
     db.commit()
     
-    # Trigger parsing automatically? For now, we wait for explicit call or call it here
-    # await parse_resume(candidate_id, db, ...) 
+    # Trigger parsing automatically
+    try:
+        await parse_resume(candidate_id, db, None) 
+    except Exception as e:
+        logger.error(f"Failed to auto-parse resume for candidate {candidate_id}: {e}")
     
     return {
-        "message": "Resume uploaded successfully",
+        "message": "Resume uploaded and parsing initiated",
         "success": True,
         "file_url": file_path
     }
@@ -261,30 +264,50 @@ async def parse_resume(
         )
     
     # Use AI Service
-    parsed_data = await ai_service.parse_resume(candidate.resume_url)
-    
-    if "error" in parsed_data:
-         # Log error but don't crash - maybe return generic success with warning?
-         # Or just use the error message
-         pass
-    
-    # Update candidate with parsed data
-    # Note: parsed_data keys match the JSON structure we asked for in AIService
-    
-    candidate.resume_parsed_data = parsed_data
-    candidate.first_name = parsed_data.get("first_name", candidate.first_name)
-    candidate.last_name = parsed_data.get("last_name", candidate.last_name)
-    candidate.email = parsed_data.get("email", candidate.email)
-    candidate.phone = parsed_data.get("phone", candidate.phone)
-    candidate.skills = parsed_data.get("skills", [])
-    candidate.total_experience_years = parsed_data.get("total_experience_years")
-    
-    db.commit()
-    
-    return {
-        "message": "Resume parsed successfully",
-        "success": True
-    }
+    try:
+        parsed_data = await ai_service.parse_resume(candidate.resume_url)
+        
+        if not parsed_data or "error" in parsed_data:
+            return {
+                "message": f"Resume parsing failed: {parsed_data.get('error', 'Unknown error')}",
+                "success": False
+            }
+        
+        # Update candidate with parsed data
+        candidate.resume_parsed_data = parsed_data
+        
+        # Only update basic fields if they are missing or if parsed data has them
+        if parsed_data.get("first_name"):
+            candidate.first_name = parsed_data["first_name"]
+        if parsed_data.get("last_name"):
+            candidate.last_name = parsed_data["last_name"]
+        if parsed_data.get("email"):
+            candidate.email = parsed_data["email"]
+        if parsed_data.get("phone"):
+            candidate.phone = parsed_data["phone"]
+            
+        candidate.skills = parsed_data.get("skills", [])
+        
+        # Convert experience to decimal if possible
+        exp = parsed_data.get("total_experience_years")
+        if exp is not None:
+            try:
+                candidate.total_experience_years = float(exp)
+            except (ValueError, TypeError):
+                pass
+        
+        db.commit()
+        
+        return {
+            "message": "Resume parsed successfully",
+            "success": True
+        }
+    except Exception as e:
+        logger.error(f"Critical error during resume parsing for {candidate_id}: {e}")
+        return {
+            "message": f"Critical error during parsing: {str(e)}",
+            "success": False
+        }
 
 
 @router.post("/{candidate_id}/blacklist", response_model=MessageResponse)
