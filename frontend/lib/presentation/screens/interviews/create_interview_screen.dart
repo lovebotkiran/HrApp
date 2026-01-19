@@ -8,8 +8,12 @@ class CreateInterviewScreen extends ConsumerStatefulWidget {
   const CreateInterviewScreen({super.key});
 
   @override
+<<<<<<< HEAD
   ConsumerState<CreateInterviewScreen> createState() =>
       _CreateInterviewScreenState();
+=======
+  ConsumerState<CreateInterviewScreen> createState() => _CreateInterviewScreenState();
+>>>>>>> origin/main
 }
 
 class _CreateInterviewScreenState extends ConsumerState<CreateInterviewScreen> {
@@ -23,12 +27,16 @@ class _CreateInterviewScreenState extends ConsumerState<CreateInterviewScreen> {
   String _interviewType = 'Technical';
   bool _isLoading = false;
 
+<<<<<<< HEAD
   final List<String> _interviewTypes = [
     'Technical',
     'HR',
     'Managerial',
     'Behavioral'
   ];
+=======
+  final List<String> _interviewTypes = ['Technical', 'HR', 'Managerial', 'Behavioral'];
+>>>>>>> origin/main
 
   @override
   void dispose() {
@@ -91,9 +99,13 @@ class _CreateInterviewScreenState extends ConsumerState<CreateInterviewScreen> {
           'scheduled_time': scheduledTime.toIso8601String(),
           'duration': int.parse(_durationController.text),
           'interview_type': _interviewType,
+<<<<<<< HEAD
           'meeting_link': _meetingLinkController.text.isEmpty
               ? null
               : _meetingLinkController.text,
+=======
+          'meeting_link': _meetingLinkController.text.isEmpty ? null : _meetingLinkController.text,
+>>>>>>> origin/main
           'status': 'Scheduled',
         });
         if (mounted) {
@@ -159,7 +171,11 @@ class _CreateInterviewScreenState extends ConsumerState<CreateInterviewScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
+<<<<<<< HEAD
                 initialValue: _interviewType,
+=======
+                value: _interviewType,
+>>>>>>> origin/main
                 decoration: const InputDecoration(
                   labelText: 'Interview Type',
                   border: OutlineInputBorder(),
@@ -245,8 +261,12 @@ class _CreateInterviewScreenState extends ConsumerState<CreateInterviewScreen> {
                     ? const SizedBox(
                         height: 20,
                         width: 20,
+<<<<<<< HEAD
                         child: CircularProgressIndicator(
                             color: Colors.white, strokeWidth: 2),
+=======
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+>>>>>>> origin/main
                       )
                     : const Text('Schedule Interview'),
               ),

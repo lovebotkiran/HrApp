@@ -339,6 +339,7 @@ class _ApiClient implements ApiClient {
   }
 
   @override
+<<<<<<< HEAD
   Future<HttpResponse<dynamic>> shareRequisitionLinkedIn(String id) async {
     const _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
@@ -367,6 +368,8 @@ class _ApiClient implements ApiClient {
   }
 
   @override
+=======
+>>>>>>> origin/main
   Future<HttpResponse<dynamic>> getJobPostings({
     int skip = 0,
     int limit = 100,
@@ -406,7 +409,11 @@ class _ApiClient implements ApiClient {
   }
 
   @override
+<<<<<<< HEAD
   Future<HttpResponse<dynamic>> getJobPosting(int id) async {
+=======
+  Future<HttpResponse<dynamic>> getJobPosting(String id) async {
+>>>>>>> origin/main
     const _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
@@ -465,7 +472,11 @@ class _ApiClient implements ApiClient {
 
   @override
   Future<HttpResponse<dynamic>> updateJobPosting(
+<<<<<<< HEAD
     int id,
+=======
+    String id,
+>>>>>>> origin/main
     Map<String, dynamic> data,
   ) async {
     const _extra = <String, dynamic>{};
@@ -496,7 +507,11 @@ class _ApiClient implements ApiClient {
   }
 
   @override
+<<<<<<< HEAD
   Future<void> deleteJobPosting(int id) async {
+=======
+  Future<void> deleteJobPosting(String id) async {
+>>>>>>> origin/main
     const _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
@@ -521,7 +536,11 @@ class _ApiClient implements ApiClient {
 
   @override
   Future<HttpResponse<dynamic>> publishJobPosting(
+<<<<<<< HEAD
     int id,
+=======
+    String id,
+>>>>>>> origin/main
     Map<String, dynamic> platforms,
   ) async {
     const _extra = <String, dynamic>{};
@@ -552,7 +571,11 @@ class _ApiClient implements ApiClient {
   }
 
   @override
+<<<<<<< HEAD
   Future<HttpResponse<dynamic>> expireJobPosting(int id) async {
+=======
+  Future<HttpResponse<dynamic>> expireJobPosting(String id) async {
+>>>>>>> origin/main
     const _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
@@ -620,7 +643,11 @@ class _ApiClient implements ApiClient {
   }
 
   @override
+<<<<<<< HEAD
   Future<Candidate> getCandidate(int id) async {
+=======
+  Future<Candidate> getCandidate(String id) async {
+>>>>>>> origin/main
     const _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
@@ -676,7 +703,11 @@ class _ApiClient implements ApiClient {
 
   @override
   Future<Candidate> updateCandidate(
+<<<<<<< HEAD
     int id,
+=======
+    String id,
+>>>>>>> origin/main
     Map<String, dynamic> data,
   ) async {
     const _extra = <String, dynamic>{};
@@ -706,7 +737,11 @@ class _ApiClient implements ApiClient {
   }
 
   @override
+<<<<<<< HEAD
   Future<void> deleteCandidate(int id) async {
+=======
+  Future<void> deleteCandidate(String id) async {
+>>>>>>> origin/main
     const _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
@@ -732,11 +767,16 @@ class _ApiClient implements ApiClient {
   @override
   Future<HttpResponse<dynamic>> uploadResume(
     String id,
+<<<<<<< HEAD
     File file,
+=======
+    dynamic file,
+>>>>>>> origin/main
   ) async {
     const _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
+<<<<<<< HEAD
     final _data = FormData();
     _data.files.add(MapEntry(
       'file',
@@ -745,6 +785,10 @@ class _ApiClient implements ApiClient {
         filename: file.path.split(Platform.pathSeparator).last,
       ),
     ));
+=======
+    // Placeholder for web compatibility
+    final _data = FormData();
+>>>>>>> origin/main
     final _result =
         await _dio.fetch(_setStreamType<HttpResponse<dynamic>>(Options(
       method: 'POST',
@@ -798,7 +842,11 @@ class _ApiClient implements ApiClient {
 
   @override
   Future<Candidate> blacklistCandidate(
+<<<<<<< HEAD
     int id,
+=======
+    String id,
+>>>>>>> origin/main
     Map<String, dynamic> data,
   ) async {
     const _extra = <String, dynamic>{};
@@ -832,7 +880,11 @@ class _ApiClient implements ApiClient {
     int skip = 0,
     int limit = 100,
     String? status,
+<<<<<<< HEAD
     int? jobPostingId,
+=======
+    String? jobPostingId,
+>>>>>>> origin/main
   }) async {
     const _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -867,7 +919,11 @@ class _ApiClient implements ApiClient {
   }
 
   @override
+<<<<<<< HEAD
   Future<HttpResponse<dynamic>> getApplication(int id) async {
+=======
+  Future<HttpResponse<dynamic>> getApplication(String id) async {
+>>>>>>> origin/main
     const _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
@@ -926,7 +982,11 @@ class _ApiClient implements ApiClient {
 
   @override
   Future<HttpResponse<dynamic>> updateApplicationStatus(
+<<<<<<< HEAD
     int id,
+=======
+    String id,
+>>>>>>> origin/main
     Map<String, dynamic> data,
   ) async {
     const _extra = <String, dynamic>{};
@@ -957,7 +1017,11 @@ class _ApiClient implements ApiClient {
   }
 
   @override
+<<<<<<< HEAD
   Future<HttpResponse<dynamic>> shortlistApplication(int id) async {
+=======
+  Future<HttpResponse<dynamic>> shortlistApplication(String id) async {
+>>>>>>> origin/main
     const _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
@@ -986,7 +1050,11 @@ class _ApiClient implements ApiClient {
 
   @override
   Future<HttpResponse<dynamic>> rejectApplication(
+<<<<<<< HEAD
     int id,
+=======
+    String id,
+>>>>>>> origin/main
     Map<String, dynamic> data,
   ) async {
     const _extra = <String, dynamic>{};
@@ -1017,7 +1085,11 @@ class _ApiClient implements ApiClient {
   }
 
   @override
+<<<<<<< HEAD
   Future<HttpResponse<dynamic>> calculateMatchScore(int id) async {
+=======
+  Future<HttpResponse<dynamic>> calculateMatchScore(String id) async {
+>>>>>>> origin/main
     const _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
@@ -1045,11 +1117,46 @@ class _ApiClient implements ApiClient {
   }
 
   @override
+<<<<<<< HEAD
+=======
+  Future<HttpResponse<dynamic>> rankAll() async {
+    const _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    final Map<String, dynamic>? _data = null;
+    final _result =
+        await _dio.fetch(_setStreamType<HttpResponse<dynamic>>(Options(
+      method: 'POST',
+      headers: _headers,
+      extra: _extra,
+    )
+            .compose(
+              _dio.options,
+              '/applications/rank-all',
+              queryParameters: queryParameters,
+              data: _data,
+            )
+            .copyWith(
+                baseUrl: _combineBaseUrls(
+              _dio.options.baseUrl,
+              baseUrl,
+            ))));
+    final value = _result.data;
+    final httpResponse = HttpResponse(value, _result);
+    return httpResponse;
+  }
+
+  @override
+>>>>>>> origin/main
   Future<List<Interview>> getInterviews({
     int skip = 0,
     int limit = 100,
     String? status,
+<<<<<<< HEAD
     int? candidateId,
+=======
+    String? candidateId,
+>>>>>>> origin/main
   }) async {
     const _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -1085,7 +1192,11 @@ class _ApiClient implements ApiClient {
   }
 
   @override
+<<<<<<< HEAD
   Future<Interview> getInterview(int id) async {
+=======
+  Future<Interview> getInterview(String id) async {
+>>>>>>> origin/main
     const _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
@@ -1141,7 +1252,11 @@ class _ApiClient implements ApiClient {
 
   @override
   Future<Interview> updateInterview(
+<<<<<<< HEAD
     int id,
+=======
+    String id,
+>>>>>>> origin/main
     Map<String, dynamic> data,
   ) async {
     const _extra = <String, dynamic>{};
@@ -1172,7 +1287,11 @@ class _ApiClient implements ApiClient {
 
   @override
   Future<Interview> rescheduleInterview(
+<<<<<<< HEAD
     int id,
+=======
+    String id,
+>>>>>>> origin/main
     Map<String, dynamic> data,
   ) async {
     const _extra = <String, dynamic>{};
@@ -1203,7 +1322,11 @@ class _ApiClient implements ApiClient {
 
   @override
   Future<Interview> cancelInterview(
+<<<<<<< HEAD
     int id,
+=======
+    String id,
+>>>>>>> origin/main
     Map<String, dynamic> data,
   ) async {
     const _extra = <String, dynamic>{};
@@ -1233,7 +1356,11 @@ class _ApiClient implements ApiClient {
   }
 
   @override
+<<<<<<< HEAD
   Future<Interview> completeInterview(int id) async {
+=======
+  Future<Interview> completeInterview(String id) async {
+>>>>>>> origin/main
     const _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
@@ -1261,7 +1388,11 @@ class _ApiClient implements ApiClient {
 
   @override
   Future<HttpResponse<dynamic>> submitInterviewFeedback(
+<<<<<<< HEAD
     int id,
+=======
+    String id,
+>>>>>>> origin/main
     Map<String, dynamic> data,
   ) async {
     const _extra = <String, dynamic>{};
@@ -1292,7 +1423,11 @@ class _ApiClient implements ApiClient {
   }
 
   @override
+<<<<<<< HEAD
   Future<HttpResponse<dynamic>> getInterviewFeedback(int id) async {
+=======
+  Future<HttpResponse<dynamic>> getInterviewFeedback(String id) async {
+>>>>>>> origin/main
     const _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
@@ -1324,7 +1459,11 @@ class _ApiClient implements ApiClient {
     int skip = 0,
     int limit = 100,
     String? status,
+<<<<<<< HEAD
     int? candidateId,
+=======
+    String? candidateId,
+>>>>>>> origin/main
   }) async {
     const _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -1360,7 +1499,11 @@ class _ApiClient implements ApiClient {
   }
 
   @override
+<<<<<<< HEAD
   Future<Offer> getOffer(int id) async {
+=======
+  Future<Offer> getOffer(String id) async {
+>>>>>>> origin/main
     const _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
@@ -1416,7 +1559,11 @@ class _ApiClient implements ApiClient {
 
   @override
   Future<Offer> updateOffer(
+<<<<<<< HEAD
     int id,
+=======
+    String id,
+>>>>>>> origin/main
     Map<String, dynamic> data,
   ) async {
     const _extra = <String, dynamic>{};
@@ -1447,7 +1594,11 @@ class _ApiClient implements ApiClient {
 
   @override
   Future<Offer> approveOffer(
+<<<<<<< HEAD
     int id,
+=======
+    String id,
+>>>>>>> origin/main
     Map<String, dynamic> data,
   ) async {
     const _extra = <String, dynamic>{};
@@ -1477,7 +1628,11 @@ class _ApiClient implements ApiClient {
   }
 
   @override
+<<<<<<< HEAD
   Future<Offer> sendOffer(int id) async {
+=======
+  Future<Offer> sendOffer(String id) async {
+>>>>>>> origin/main
     const _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
@@ -1505,7 +1660,11 @@ class _ApiClient implements ApiClient {
 
   @override
   Future<Offer> acceptOffer(
+<<<<<<< HEAD
     int id,
+=======
+    String id,
+>>>>>>> origin/main
     Map<String, dynamic> data,
   ) async {
     const _extra = <String, dynamic>{};
@@ -1536,7 +1695,11 @@ class _ApiClient implements ApiClient {
 
   @override
   Future<Offer> reviseOffer(
+<<<<<<< HEAD
     int id,
+=======
+    String id,
+>>>>>>> origin/main
     Map<String, dynamic> data,
   ) async {
     const _extra = <String, dynamic>{};
@@ -1566,7 +1729,11 @@ class _ApiClient implements ApiClient {
   }
 
   @override
+<<<<<<< HEAD
   Future<Offer> withdrawOffer(int id) async {
+=======
+  Future<Offer> withdrawOffer(String id) async {
+>>>>>>> origin/main
     const _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
@@ -1649,7 +1816,11 @@ class _ApiClient implements ApiClient {
   }
 
   @override
+<<<<<<< HEAD
   Future<HttpResponse<dynamic>> getOnboardingStatus(int offerId) async {
+=======
+  Future<HttpResponse<dynamic>> getOnboardingStatus(String offerId) async {
+>>>>>>> origin/main
     const _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
@@ -1774,7 +1945,11 @@ class _ApiClient implements ApiClient {
   }
 
   @override
+<<<<<<< HEAD
   Future<HttpResponse<dynamic>> getReferralStatus(int id) async {
+=======
+  Future<HttpResponse<dynamic>> getReferralStatus(String id) async {
+>>>>>>> origin/main
     const _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
@@ -1833,7 +2008,11 @@ class _ApiClient implements ApiClient {
 
   @override
   Future<HttpResponse<dynamic>> approveReferralBonus(
+<<<<<<< HEAD
     int id,
+=======
+    String id,
+>>>>>>> origin/main
     Map<String, dynamic> data,
   ) async {
     const _extra = <String, dynamic>{};

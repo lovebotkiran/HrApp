@@ -63,8 +63,6 @@ class Settings(BaseSettings):
     LINKEDIN_ENABLED: bool = False
     LINKEDIN_CLIENT_ID: str = ""
     LINKEDIN_CLIENT_SECRET: str = ""
-    LINKEDIN_ACCESS_TOKEN: str = ""
-    LINKEDIN_ORGANIZATION_URN: str = ""
     
     # AI
     AI_MODEL_PATH: str = "./models"

@@ -227,6 +227,18 @@ class Application(Base):
     candidate = relationship("Candidate", back_populates="applications")
     interviews = relationship("Interview", back_populates="application")
 
+    @property
+    def candidate_name(self):
+        if self.candidate:
+            return f"{self.candidate.first_name} {self.candidate.last_name}"
+        return "Unknown"
+
+    @property
+    def job_title(self):
+        if self.job_posting:
+            return self.job_posting.title
+        return "Unknown Position"
+
 
 class CandidateDocument(Base):
     __tablename__ = "candidate_documents"

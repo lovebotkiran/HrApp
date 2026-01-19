@@ -25,6 +25,12 @@ JobPosting _$JobPostingFromJson(Map<String, dynamic> json) => JobPosting(
       viewsCount: (json['views_count'] as num?)?.toInt(),
       applicationsCount: (json['applications_count'] as num?)?.toInt(),
       jobRequisitionId: json['job_requisition_id'] as String?,
+<<<<<<< HEAD
+=======
+      skillsRequired: (json['skills_required'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+>>>>>>> origin/main
       createdAt: json['created_at'] == null
           ? null
           : DateTime.parse(json['created_at'] as String),
@@ -46,5 +52,9 @@ Map<String, dynamic> _$JobPostingToJson(JobPosting instance) =>
       'views_count': instance.viewsCount,
       'applications_count': instance.applicationsCount,
       'job_requisition_id': instance.jobRequisitionId,
+<<<<<<< HEAD
+=======
+      'skills_required': instance.skillsRequired,
+>>>>>>> origin/main
       'created_at': instance.createdAt?.toIso8601String(),
     };

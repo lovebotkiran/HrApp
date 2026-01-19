@@ -10,7 +10,11 @@ def fix_admin_password():
     print(f"Hash Length: {len(hashed)}")
     
     try:
+<<<<<<< HEAD
         conn = psycopg2.connect("postgresql://postgres:postgres@localhost:5435/agentichr")
+=======
+        conn = psycopg2.connect("postgresql://postgres:postgres@localhost:5432/agentichr")
+>>>>>>> origin/main
         cur = conn.cursor()
         cur.execute("UPDATE users SET password_hash = %s WHERE email = %s", (hashed, "admin@agentichr.com"))
         conn.commit()

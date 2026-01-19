@@ -64,6 +64,7 @@ class JobRequisitionBase(BaseModel):
     job_description: Optional[str] = None
     responsibilities: Optional[str] = None
     benefits: Optional[str] = None
+    status: Optional[str] = "draft"
     priority: str = "medium"
     target_hire_date: Optional[date] = None
     reason_for_hiring: Optional[str] = None
@@ -87,6 +88,7 @@ class JobRequisitionUpdate(BaseModel):
     job_description: Optional[str] = None
     responsibilities: Optional[str] = None
     benefits: Optional[str] = None
+    status: Optional[str] = None
     priority: Optional[str] = None
     target_hire_date: Optional[date] = None
 
@@ -207,6 +209,8 @@ class ApplicationResponse(BaseModel):
     application_number: str
     job_posting_id: UUID
     candidate_id: UUID
+    candidate_name: Optional[str] = None
+    job_title: Optional[str] = None
     source: str
     status: str
     ai_match_score: Optional[Decimal]

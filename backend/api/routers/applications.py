@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
 import uuid
+import logging
 
 from infrastructure.database.connection import get_db
 from infrastructure.database.models import (
@@ -20,6 +21,7 @@ from application.services.ai_service import AIService
 
 router = APIRouter()
 ai_service = AIService()
+logger = logging.getLogger(__name__)
 
 
 @router.post("/", response_model=ApplicationResponse, status_code=status.HTTP_201_CREATED)
@@ -355,5 +357,132 @@ async def calculate_match_score(
     
     return {
         "message": "Match score calculated successfully",
+        "success": True
+    }
+
+
+@router.post("/rank-by-job-posting/{job_posting_id}", response_model=MessageResponse)
+async def rank_applications_by_job_posting(
+    job_posting_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Rank all applications for a specific job posting using AI.
+    This will parse resumes and calculate match scores for all candidates.
+    """
+    # Verify job posting exists
+    job_posting = db.query(JobPosting).filter(JobPosting.id == job_posting_id).first()
+    
+    if not job_posting:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job posting not found"
+        )
+    
+    if not job_posting.description:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Job posting must have a description to rank candidates"
+        )
+    
+    # Get all applications for this job posting
+    applications = db.query(Application).filter(
+        Application.job_posting_id == job_posting_id
+    ).all()
+    
+    if not applications:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No applications found for this job posting"
+        )
+    
+    ranked_count = 0
+    skipped_count = 0
+    
+    for application in applications:
+        try:
+            # Parse resume if not already parsed
+            if application.candidate and application.candidate.resume_url:
+                if not application.candidate.resume_parsed_data:
+                    parsed_data = await ai_service.parse_resume(
+                        application.candidate.resume_url,
+                        "application/pdf"
+                    )
+                    
+                    if "error" not in parsed_data:
+                        application.candidate.resume_parsed_data = parsed_data
+                        application.candidate.skills = parsed_data.get("skills", [])
+                        application.candidate.total_experience_years = parsed_data.get("total_experience_years")
+            
+            # Rank candidate if we have parsed data
+            if application.candidate and application.candidate.resume_parsed_data:
+                result = await ai_service.rank_candidate(
+                    job_description=job_posting.description,
+                    candidate_profile_json=application.candidate.resume_parsed_data
+                )
+                
+                application.ai_match_score = result.get("score", 0)
+                application.ai_match_reasoning = result.get("reasoning", "No explanation provided")
+                ranked_count += 1
+            else:
+                skipped_count += 1
+                
+        except Exception as e:
+            logger.error(f"Error ranking application {application.id}: {e}")
+            skipped_count += 1
+            continue
+    
+    db.commit()
+    
+    return {
+        "message": f"Ranked {ranked_count} applications successfully. Skipped {skipped_count}.",
+        "success": True
+    }
+
+
+@router.post("/rank-all", response_model=MessageResponse)
+async def rank_all_applications(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Rank all applications that don't have an AI score yet.
+    """
+    applications = db.query(Application).filter(
+        Application.ai_match_score == None
+    ).all()
+    
+    if not applications:
+        return {
+            "message": "No new applications to rank",
+            "success": True
+        }
+    
+    ranked_count = 0
+    error_count = 0
+    
+    for app in applications:
+        try:
+            if not app.job_posting or not app.job_posting.description:
+                continue
+                
+            # Trigger ranking
+            result = await ai_service.rank_candidate(
+                job_description=app.job_posting.description,
+                candidate_profile_json=app.candidate.resume_parsed_data if app.candidate.resume_parsed_data else {}
+            )
+            
+            app.ai_match_score = result.get("score", 0)
+            app.ai_match_reasoning = result.get("reasoning", "No explanation provided")
+            ranked_count += 1
+        except Exception as e:
+            logger.error(f"Error ranking application {app.id}: {e}")
+            error_count += 1
+            
+    db.commit()
+    
+    return {
+        "message": f"Successfully ranked {ranked_count} applications. {error_count} errors.",
         "success": True
     }

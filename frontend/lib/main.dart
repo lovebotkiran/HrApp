@@ -20,6 +20,11 @@ import 'package:agentichr_frontend/presentation/screens/job_requisitions/create_
 import 'package:agentichr_frontend/presentation/screens/candidates/create_candidate_screen.dart';
 import 'package:agentichr_frontend/presentation/screens/interviews/create_interview_screen.dart';
 import 'package:agentichr_frontend/presentation/screens/offers/create_offer_screen.dart';
+<<<<<<< HEAD
+=======
+import 'package:agentichr_frontend/presentation/screens/candidates/candidate_detail_screen.dart';
+import 'package:agentichr_frontend/presentation/screens/applications/ai_rankings_screen.dart';
+>>>>>>> origin/main
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -73,6 +78,19 @@ class AgenticHRApp extends StatelessWidget {
         '/candidates/create': (context) => const CreateCandidateScreen(),
         '/interviews/create': (context) => const CreateInterviewScreen(),
         '/offers/create': (context) => const CreateOfferScreen(),
+<<<<<<< HEAD
+=======
+        '/ai-rankings': (context) => const AIRankingsScreen(),
+      },
+      onGenerateRoute: (settings) {
+        if (settings.name == '/candidates/detail') {
+          final id = settings.arguments as String;
+          return MaterialPageRoute(
+            builder: (context) => CandidateDetailScreen(candidateId: id),
+          );
+        }
+        return null;
+>>>>>>> origin/main
       },
     );
   }

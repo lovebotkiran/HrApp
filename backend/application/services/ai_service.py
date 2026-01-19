@@ -91,32 +91,15 @@ class AIService:
         Required Skills: {', '.join(skills)}
         Experience Level: {experience_min} to {experience_max} years
         
-        Structure the JD exactly like this:
-        # About the Role
-        [Brief description]
-        
-        # Key Responsibilities
-        ## [Task 1]
-        ## [Task 2]
-        
-        # Tech Stack / Requirements
-        # Required Skills:
-        ## [Skill 1]
-        ## [Skill 2]
-        
-        # What We Offer
-        # Benefits:
-        ## [Benefit 1]
-        
-        Formatting Rules:
-        1. Lines starting with a single "# " will be bolded (use for Section Headers and Labels like "Required Skills:").
-        2. Lines starting with "## " will be converted to bullet points using the "•" symbol.
-        3. Do NOT use "*" or "-" anywhere.
+        Structure the JD with:
+        1. About the Role
+        2. Key Responsibilities
+        3. Tech Stack / Requirements
+        4. What We Offer
         
         Tone: Modern, exciting, professional.
         """
-        response = self.llm.invoke(prompt)
-        return response.replace('*', '#')
+        return self.llm.invoke(prompt)
 
     async def rank_candidate(self, job_description: str, candidate_profile_json: Dict) -> Dict[str, Any]:
         """Compares candidate profile against JD and returns a score."""

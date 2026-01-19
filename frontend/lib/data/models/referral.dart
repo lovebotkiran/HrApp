@@ -4,9 +4,15 @@ part 'referral.g.dart';
 
 @JsonSerializable()
 class Referral {
+<<<<<<< HEAD
   final int? id;
   @JsonKey(name: 'referrer_id')
   final int referrerId;
+=======
+  final String? id;
+  @JsonKey(name: 'referrer_id')
+  final String referrerId;
+>>>>>>> origin/main
   @JsonKey(name: 'candidate_name')
   final String candidateName;
   @JsonKey(name: 'candidate_email')

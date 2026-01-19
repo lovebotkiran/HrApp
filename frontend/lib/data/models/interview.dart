@@ -4,11 +4,19 @@ part 'interview.g.dart';
 
 @JsonSerializable()
 class Interview {
+<<<<<<< HEAD
   final int? id;
   @JsonKey(name: 'application_id')
   final int applicationId;
   @JsonKey(name: 'interviewer_id')
   final int interviewerId;
+=======
+  final String? id;
+  @JsonKey(name: 'application_id')
+  final String applicationId;
+  @JsonKey(name: 'interviewer_id')
+  final String interviewerId;
+>>>>>>> origin/main
   @JsonKey(name: 'scheduled_time')
   final DateTime scheduledTime;
   final int duration;

@@ -16,52 +16,9 @@ from application.schemas import (
     PaginatedResponse
 )
 from application.services.ai_service import AIService
-from application.services.linkedin_service import LinkedInService
 
 router = APIRouter()
 ai_service = AIService()
-linkedin_service = LinkedInService()
-
-
-@router.post("/{requisition_id}/share-linkedin", response_model=MessageResponse)
-async def share_job_requisition_linkedin(
-    requisition_id: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Share a job requisition to LinkedIn.
-    """
-    requisition = db.query(JobRequisition).filter(JobRequisition.id == requisition_id).first()
-    
-    if not requisition:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Job requisition not found"
-        )
-        
-    # Use the job description if available, otherwise fallback to title + department
-    description = requisition.job_description if requisition.job_description else f"We are looking for a {requisition.title} in our {requisition.department} department."
-    
-    # In a real app, generate a public apply URL
-    apply_url = f"https://agentichr.com/careers/{requisition.requisition_number}"
-    
-    result = await linkedin_service.share_job(
-        title=requisition.title,
-        description=description,
-        apply_url=apply_url
-    )
-    
-    if not result["success"]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=result["message"]
-        )
-    
-    return {
-        "message": "Job requisition shared to LinkedIn successfully",
-        "success": True
-    }
 
 
 @router.post("/", response_model=JobRequisitionResponse, status_code=status.HTTP_201_CREATED)
@@ -80,7 +37,6 @@ async def create_job_requisition(
     new_requisition = JobRequisition(
         requisition_number=requisition_number,
         requested_by=current_user.id,
-        status="approved", # TEMPORARY: Auto-approve for testing
         **requisition_data.dict()
     )
     
@@ -88,26 +44,23 @@ async def create_job_requisition(
     db.commit()
     db.refresh(new_requisition)
     
-    # Create approval workflow
-    # Level 1: Manager approval (auto-approved if user is manager)
-    # Level 2: HR approval
-    # Level 3: Director approval
-    
-    approval_levels = [
-        {"level": 1, "role": "manager"},
-        {"level": 2, "role": "hr"},
-        {"level": 3, "role": "director"}
-    ]
-    
-    for level_info in approval_levels:
-        approval = JobRequisitionApproval(
-            requisition_id=new_requisition.id,
-            approval_level=level_info["level"],
-            status="pending"
-        )
-        db.add(approval)
-    
-    db.commit()
+    # Create approval workflow only if status is pending_approval
+    if new_requisition.status == "pending_approval":
+        approval_levels = [
+            {"level": 1, "role": "manager"},
+            {"level": 2, "role": "hr"},
+            {"level": 3, "role": "director"}
+        ]
+        
+        for level_info in approval_levels:
+            approval = JobRequisitionApproval(
+                requisition_id=new_requisition.id,
+                approval_level=level_info["level"],
+                status="pending"
+            )
+            db.add(approval)
+        
+        db.commit()
     
     return new_requisition
 
@@ -209,9 +162,32 @@ async def update_job_requisition(
         )
     
     # Update fields
+    old_status = requisition.status
     update_data = requisition_data.dict(exclude_unset=True)
     for field, value in update_data.items():
         setattr(requisition, field, value)
+    
+    # If status changed to pending_approval, create approvals if they don't exist
+    if old_status == "draft" and requisition.status == "pending_approval":
+        # Check if approvals already exist
+        existing_approvals = db.query(JobRequisitionApproval).filter(
+            JobRequisitionApproval.requisition_id == requisition_id
+        ).count()
+        
+        if existing_approvals == 0:
+            approval_levels = [
+                {"level": 1, "role": "manager"},
+                {"level": 2, "role": "hr"},
+                {"level": 3, "role": "director"}
+            ]
+            
+            for level_info in approval_levels:
+                approval = JobRequisitionApproval(
+                    requisition_id=requisition.id,
+                    approval_level=level_info["level"],
+                    status="pending"
+                )
+                db.add(approval)
     
     db.commit()
     db.refresh(requisition)

@@ -19,16 +19,8 @@ from application.schemas import (
     TokenResponse,
     MessageResponse
 )
-from application.services.linkedin_service import LinkedInService
-from core.config import settings
-import secrets
-from fastapi.responses import RedirectResponse
 
 router = APIRouter()
-linkedin_service = LinkedInService()
-
-# In-memory storage for OAuth states (should ideally be Redis in production)
-oauth_states = {}
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -173,77 +165,3 @@ async def logout(current_user: User = Depends(get_current_user)):
         "message": "Successfully logged out",
         "success": True
     }
-
-
-@router.get("/linkedin/login")
-async def linkedin_login():
-    """
-    Initiate LinkedIn OAuth2 login flow.
-    """
-    state = secrets.token_urlsafe(32)
-    # Store state for verification in callback
-    oauth_states[state] = True
-    
-    redirect_uri = f"{settings.CORS_ORIGINS.split(',')[0]}/auth/linkedin/callback" # Fallback to frontend URL
-    # or use a backend callback if the frontend can't handle it easily
-    backend_callback = f"http://localhost:8000{settings.API_PREFIX}/auth/linkedin/callback"
-    
-    auth_url = linkedin_service.get_authorization_url(redirect_uri=backend_callback, state=state)
-    return RedirectResponse(auth_url)
-
-
-@router.get("/linkedin/callback")
-async def linkedin_callback(code: str, state: str, db: Session = Depends(get_db)):
-    """
-    Handle LinkedIn OAuth2 callback.
-    """
-    # Verify state
-    if state not in oauth_states:
-        raise HTTPException(status_code=400, detail="Invalid state parameter")
-    del oauth_states[state]
-    
-    backend_callback = f"http://localhost:8000{settings.API_PREFIX}/auth/linkedin/callback"
-    
-    # Exchange code for access token
-    access_token = await linkedin_service.get_access_token(code=code, redirect_uri=backend_callback)
-    if not access_token:
-        raise HTTPException(status_code=400, detail="Failed to get access token from LinkedIn")
-    
-    # Get user info
-    linkedin_user = await linkedin_service.get_user_info(access_token)
-    if not linkedin_user:
-        raise HTTPException(status_code=400, detail="Failed to get user info from LinkedIn")
-    
-    email = linkedin_user.get("email")
-    first_name = linkedin_user.get("given_name", "")
-    last_name = linkedin_user.get("family_name", "")
-    
-    if not email:
-        raise HTTPException(status_code=400, detail="LinkedIn did not provide an email address")
-    
-    # Find or create user
-    user = db.query(User).filter(User.email == email).first()
-    if not user:
-        # Create new user if they don't exist
-        user = User(
-            email=email,
-            password_hash="LINKEDIN_LOGIN",  # Placeholder
-            first_name=first_name,
-            last_name=last_name,
-            is_active=True,
-            is_verified=True
-        )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-    
-    # Create tokens
-    local_access_token = create_access_token(data={"sub": str(user.id)})
-    local_refresh_token = create_refresh_token(data={"sub": str(user.id)})
-    
-    # Redirect back to frontend with tokens
-    # In a real app, you might use a more secure way to pass tokens back to the frontend
-    frontend_url = settings.CORS_ORIGINS.split(',')[0]
-    redirect_url = f"{frontend_url}/auth/callback?access_token={local_access_token}&refresh_token={local_refresh_token}"
-    
-    return RedirectResponse(redirect_url)

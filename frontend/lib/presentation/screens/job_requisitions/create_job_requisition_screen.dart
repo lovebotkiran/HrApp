@@ -12,12 +12,19 @@ class CreateJobRequisitionScreen extends ConsumerStatefulWidget {
   const CreateJobRequisitionScreen({super.key, this.requisition});
 
   @override
+<<<<<<< HEAD
   ConsumerState<CreateJobRequisitionScreen> createState() =>
       _CreateJobRequisitionScreenState();
 }
 
 class _CreateJobRequisitionScreenState
     extends ConsumerState<CreateJobRequisitionScreen> {
+=======
+  ConsumerState<CreateJobRequisitionScreen> createState() => _CreateJobRequisitionScreenState();
+}
+
+class _CreateJobRequisitionScreenState extends ConsumerState<CreateJobRequisitionScreen> {
+>>>>>>> origin/main
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
@@ -39,6 +46,7 @@ class _CreateJobRequisitionScreenState
 
   // Department-to-skills mapping
   final Map<String, List<String>> _departmentSkills = {
+<<<<<<< HEAD
     'Technology': [
       'Python',
       'Java',
@@ -94,6 +102,14 @@ class _CreateJobRequisitionScreenState
       'Project Management',
       'Lean Six Sigma'
     ],
+=======
+    'Technology': ['Python', 'Java', 'JavaScript', 'MySQL', 'MongoDB', 'React', 'Node.js', 'AWS', 'Docker', 'Kubernetes'],
+    'Sales': ['Lead Generation', 'Prospecting', 'Cold Calling', 'Negotiation', 'CRM', 'Sales Strategy', 'Account Management'],
+    'Marketing': ['SEO', 'Content Marketing', 'Social Media', 'Email Marketing', 'Google Analytics', 'PPC', 'Brand Management'],
+    'HR': ['Recruitment', 'Onboarding', 'Performance Management', 'Employee Relations', 'HRIS', 'Compliance'],
+    'Finance': ['Accounting', 'Financial Analysis', 'Budgeting', 'Tax Planning', 'QuickBooks', 'Excel', 'Financial Reporting'],
+    'Operations': ['Process Improvement', 'Supply Chain', 'Logistics', 'Quality Control', 'Project Management', 'Lean Six Sigma'],
+>>>>>>> origin/main
   };
 
   List<String> get _availableSkills {
@@ -104,6 +120,7 @@ class _CreateJobRequisitionScreenState
   @override
   void initState() {
     super.initState();
+<<<<<<< HEAD
     _titleController =
         TextEditingController(text: widget.requisition?.title ?? '');
     _descriptionController =
@@ -112,10 +129,18 @@ class _CreateJobRequisitionScreenState
     _selectedDepartment = widget.requisition?.department;
     if (_selectedDepartment != null &&
         !_departmentOptions.contains(_selectedDepartment)) {
+=======
+    _titleController = TextEditingController(text: widget.requisition?.title ?? '');
+    _descriptionController = TextEditingController(text: widget.requisition?.jobDescription ?? '');
+    
+    _selectedDepartment = widget.requisition?.department;
+    if (_selectedDepartment != null && !_departmentOptions.contains(_selectedDepartment)) {
+>>>>>>> origin/main
       _departmentOptions.add(_selectedDepartment!);
     }
 
     _selectedEmploymentType = widget.requisition?.employmentType;
+<<<<<<< HEAD
 
     _selectedExperience = widget.requisition?.experienceMin;
     if (_selectedExperience != null &&
@@ -123,6 +148,14 @@ class _CreateJobRequisitionScreenState
       if (_selectedExperience! > 25) {
         _selectedExperience = null;
       }
+=======
+    
+    _selectedExperience = widget.requisition?.experienceMin;
+    if (_selectedExperience != null && (_selectedExperience! < 0 || _selectedExperience! > 25)) {
+       if (_selectedExperience! > 25) {
+         _selectedExperience = null; 
+       }
+>>>>>>> origin/main
     }
 
     _selectedSkills = widget.requisition?.requiredSkills ?? [];
@@ -151,9 +184,13 @@ class _CreateJobRequisitionScreenState
       final response = await dio.post(
         '/ai/generate-job-description',
         data: {
+<<<<<<< HEAD
           'title': _titleController.text.isNotEmpty
               ? _titleController.text
               : 'Position',
+=======
+          'title': _titleController.text.isNotEmpty ? _titleController.text : 'Position',
+>>>>>>> origin/main
           'department': _selectedDepartment ?? 'Department',
           'skills': _selectedSkills,
           'experience': _selectedExperience ?? 0,
@@ -177,6 +214,7 @@ class _CreateJobRequisitionScreenState
       if (mounted) {
         String errorMessage = 'Error generating description';
         if (e.response?.statusCode == 503) {
+<<<<<<< HEAD
           errorMessage =
               'AI model is loading. Please try again in a few seconds.';
         } else if (e.response?.data != null &&
@@ -190,6 +228,18 @@ class _CreateJobRequisitionScreenState
               'Connection error. Please check your internet connection.';
         }
 
+=======
+          errorMessage = 'AI model is loading. Please try again in a few seconds.';
+        } else if (e.response?.data != null && e.response!.data['detail'] != null) {
+          errorMessage = e.response!.data['detail'];
+        } else if (e.type == DioExceptionType.connectionTimeout || 
+                   e.type == DioExceptionType.receiveTimeout) {
+          errorMessage = 'Request timed out. Please try again.';
+        } else if (e.type == DioExceptionType.connectionError) {
+          errorMessage = 'Connection error. Please check your internet connection.';
+        }
+        
+>>>>>>> origin/main
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errorMessage)),
         );
@@ -207,7 +257,11 @@ class _CreateJobRequisitionScreenState
     }
   }
 
+<<<<<<< HEAD
   Future<void> _submit() async {
+=======
+  Future<void> _submit(String status) async {
+>>>>>>> origin/main
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       try {
@@ -219,6 +273,10 @@ class _CreateJobRequisitionScreenState
           'experience_min': _selectedExperience,
           'required_skills': _selectedSkills,
           'job_description': _descriptionController.text,
+<<<<<<< HEAD
+=======
+          'status': status,
+>>>>>>> origin/main
         };
 
         if (widget.requisition != null) {
@@ -229,9 +287,13 @@ class _CreateJobRequisitionScreenState
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
+<<<<<<< HEAD
             SnackBar(
                 content: Text(
                     'Job Requisition ${widget.requisition != null ? 'updated' : 'created'} successfully')),
+=======
+            SnackBar(content: Text('Job Requisition ${widget.requisition != null ? 'updated' : 'created'} successfully')),
+>>>>>>> origin/main
           );
           Navigator.pop(context);
           ref.refresh(jobRequisitionsProvider(JobRequisitionFilter()));
@@ -259,7 +321,11 @@ class _CreateJobRequisitionScreenState
     }
 
     final List<String> tempSelected = List.from(_selectedSkills);
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> origin/main
     await showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -310,9 +376,13 @@ class _CreateJobRequisitionScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+<<<<<<< HEAD
         title: Text(widget.requisition != null
             ? 'Edit Job Requisition'
             : 'New Job Requisition'),
+=======
+        title: Text(widget.requisition != null ? 'Edit Job Requisition' : 'New Job Requisition'),
+>>>>>>> origin/main
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -321,7 +391,11 @@ class _CreateJobRequisitionScreenState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+<<<<<<< HEAD
               TextFormField(
+=======
+                TextFormField(
+>>>>>>> origin/main
                 controller: _titleController,
                 decoration: const InputDecoration(
                   labelText: 'Job Title',
@@ -336,17 +410,28 @@ class _CreateJobRequisitionScreenState
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
+<<<<<<< HEAD
                 initialValue: _selectedDepartment,
+=======
+                value: _selectedDepartment,
+>>>>>>> origin/main
                 decoration: const InputDecoration(
                   labelText: 'Department',
                   border: OutlineInputBorder(),
                 ),
+<<<<<<< HEAD
                 items: _departmentOptions
                     .map((dept) => DropdownMenuItem(
                           value: dept,
                           child: Text(dept),
                         ))
                     .toList(),
+=======
+                items: _departmentOptions.map((dept) => DropdownMenuItem(
+                  value: dept,
+                  child: Text(dept),
+                )).toList(),
+>>>>>>> origin/main
                 onChanged: (value) {
                   setState(() {
                     _selectedDepartment = value;
@@ -363,12 +448,17 @@ class _CreateJobRequisitionScreenState
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
+<<<<<<< HEAD
                 initialValue: _selectedEmploymentType,
+=======
+                value: _selectedEmploymentType,
+>>>>>>> origin/main
                 decoration: const InputDecoration(
                   labelText: 'Employment Type',
                   border: OutlineInputBorder(),
                 ),
                 items: const [
+<<<<<<< HEAD
                   DropdownMenuItem(
                       value: 'Full-time', child: Text('Full-time')),
                   DropdownMenuItem(
@@ -376,6 +466,12 @@ class _CreateJobRequisitionScreenState
                   DropdownMenuItem(value: 'Contract', child: Text('Contract')),
                   DropdownMenuItem(
                       value: 'Internship', child: Text('Internship')),
+=======
+                  DropdownMenuItem(value: 'Full-time', child: Text('Full-time')),
+                  DropdownMenuItem(value: 'Part-time', child: Text('Part-time')),
+                  DropdownMenuItem(value: 'Contract', child: Text('Contract')),
+                  DropdownMenuItem(value: 'Internship', child: Text('Internship')),
+>>>>>>> origin/main
                 ],
                 onChanged: (value) {
                   setState(() {
@@ -391,17 +487,28 @@ class _CreateJobRequisitionScreenState
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<int>(
+<<<<<<< HEAD
                 initialValue: _selectedExperience,
+=======
+                value: _selectedExperience,
+>>>>>>> origin/main
                 decoration: const InputDecoration(
                   labelText: 'Experience (yrs)',
                   border: OutlineInputBorder(),
                 ),
+<<<<<<< HEAD
                 items: List.generate(
                     26,
                     (index) => DropdownMenuItem(
                           value: index,
                           child: Text(index.toString()),
                         )),
+=======
+                items: List.generate(26, (index) => DropdownMenuItem(
+                  value: index,
+                  child: Text(index.toString()),
+                )),
+>>>>>>> origin/main
                 onChanged: (value) {
                   setState(() {
                     _selectedExperience = value;
@@ -425,6 +532,7 @@ class _CreateJobRequisitionScreenState
                     suffixIcon: Icon(Icons.arrow_drop_down),
                   ),
                   child: _selectedSkills.isEmpty
+<<<<<<< HEAD
                       ? const Text('Select skills',
                           style: TextStyle(color: Colors.grey))
                       : Wrap(
@@ -443,6 +551,21 @@ class _CreateJobRequisitionScreenState
                                     },
                                   ))
                               .toList(),
+=======
+                      ? const Text('Select skills', style: TextStyle(color: Colors.grey))
+                      : Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          children: _selectedSkills.map((skill) => Chip(
+                            label: Text(skill, style: const TextStyle(fontSize: 12)),
+                            deleteIcon: const Icon(Icons.close, size: 16),
+                            onDeleted: () {
+                              setState(() {
+                                _selectedSkills.remove(skill);
+                              });
+                            },
+                          )).toList(),
+>>>>>>> origin/main
                         ),
                 ),
               ),
@@ -450,7 +573,11 @@ class _CreateJobRequisitionScreenState
               // Write with AI button
               OutlinedButton.icon(
                 onPressed: _isGenerating ? null : _generateJobDescription,
+<<<<<<< HEAD
                 icon: _isGenerating
+=======
+                icon: _isGenerating 
+>>>>>>> origin/main
                     ? const SizedBox(
                         width: 16,
                         height: 16,
@@ -481,6 +608,7 @@ class _CreateJobRequisitionScreenState
                 },
               ),
               const SizedBox(height: 24),
+<<<<<<< HEAD
               ElevatedButton(
                 onPressed: _isLoading ? null : _submit,
                 style: ElevatedButton.styleFrom(
@@ -499,6 +627,37 @@ class _CreateJobRequisitionScreenState
                         ? 'Save Changes'
                         : 'Create Requisition'),
               ),
+=======
+              const SizedBox(height: 24),
+              if (_isLoading)
+                const Center(child: CircularProgressIndicator())
+              else
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => _submit('draft'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: Text(widget.requisition != null ? 'Update Draft' : 'Save as Draft'),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => _submit('pending_approval'),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: AppTheme.primaryColor,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('Submit for Approval'),
+                      ),
+                    ),
+                  ],
+                ),
+>>>>>>> origin/main
             ],
           ),
         ),

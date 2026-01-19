@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:agentichr_frontend/core/theme/app_theme.dart';
 import 'package:agentichr_frontend/domain/providers/providers.dart';
 import 'application_form_screen.dart';
+<<<<<<< HEAD
+=======
+import '../applications/ranked_candidates_screen.dart';
+>>>>>>> origin/main
 
 class JobPostingsListScreen extends ConsumerStatefulWidget {
   const JobPostingsListScreen({super.key});
@@ -68,6 +72,7 @@ class _JobPostingsListScreenState extends ConsumerState<JobPostingsListScreen> {
             itemCount: postings.length,
             itemBuilder: (context, index) {
               final posting = postings[index];
+<<<<<<< HEAD
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 child: ListTile(
@@ -107,6 +112,96 @@ class _JobPostingsListScreenState extends ConsumerState<JobPostingsListScreen> {
                       ),
                     );
                   },
+=======
+              final applicationsCount = posting['applications_count'] ?? 0;
+              
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ListTile(
+                      contentPadding: const EdgeInsets.all(16),
+                      title: Text(
+                        posting['title'] ?? 'Untitled',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 8),
+                          Text(posting['location'] ?? 'Location not specified'),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(Icons.visibility, size: 16, color: AppTheme.textSecondary),
+                              const SizedBox(width: 4),
+                              Text('${posting['views_count'] ?? 0} views'),
+                              const SizedBox(width: 16),
+                              Icon(Icons.assignment, size: 16, color: AppTheme.textSecondary),
+                              const SizedBox(width: 4),
+                              Text('$applicationsCount applications'),
+                            ],
+                          ),
+                        ],
+                      ),
+                      trailing: Chip(
+                        label: Text(posting['status'] ?? 'Unknown'),
+                        backgroundColor: _getStatusColor(posting['status']),
+                      ),
+                    ),
+                    // Action Buttons
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ApplicationFormScreen(jobPosting: posting),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.work_outline),
+                              label: const Text('Apply'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppTheme.primaryColor,
+                                side: BorderSide(color: AppTheme.primaryColor.withOpacity(0.5)),
+                              ),
+                            ),
+                          ),
+                          if (applicationsCount > 0) ...[
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => RankedCandidatesScreen(
+                                        jobPostingId: posting['id'] ?? '',
+                                        jobTitle: posting['title'] ?? 'Job Posting',
+                                      ),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.analytics),
+                                label: Text('Rank ($applicationsCount)'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.primaryColor,
+                                  foregroundColor: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+>>>>>>> origin/main
                 ),
               );
             },

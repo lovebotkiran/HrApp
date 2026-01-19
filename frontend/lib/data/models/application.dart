@@ -4,6 +4,7 @@ part 'application.g.dart';
 
 @JsonSerializable()
 class Application {
+<<<<<<< HEAD
   final int? id;
   @JsonKey(name: 'application_number')
   final String? applicationNumber;
@@ -11,16 +12,41 @@ class Application {
   final int candidateId;
   @JsonKey(name: 'job_posting_id')
   final int jobPostingId;
+=======
+  final String? id;
+  @JsonKey(name: 'application_number')
+  final String? applicationNumber;
+  @JsonKey(name: 'candidate_id')
+  final String candidateId;
+  @JsonKey(name: 'job_posting_id')
+  final String jobPostingId;
+>>>>>>> origin/main
   final String status;
   final String? source;
   @JsonKey(name: 'cover_letter')
   final String? coverLetter;
   @JsonKey(name: 'applied_at')
   final DateTime? appliedAt;
+<<<<<<< HEAD
   @JsonKey(name: 'match_score')
   final double? matchScore;
   @JsonKey(name: 'resume_url')
   final String? resumeUrl;
+=======
+  @JsonKey(name: 'resume_url')
+  final String? resumeUrl;
+  @JsonKey(name: 'ai_match_score', fromJson: _parseScore)
+  final double? aiMatchScore;
+
+  static double? _parseScore(dynamic score) {
+    if (score == null) return null;
+    if (score is num) return score.toDouble();
+    if (score is String) return double.tryParse(score);
+    return null;
+  }
+  @JsonKey(name: 'ai_match_reasoning')
+  final String? aiMatchReasoning;
+>>>>>>> origin/main
   @JsonKey(name: 'candidate_name')
   final String? candidateName;
   @JsonKey(name: 'candidate_email')
@@ -37,8 +63,14 @@ class Application {
     this.source,
     this.coverLetter,
     this.appliedAt,
+<<<<<<< HEAD
     this.matchScore,
     this.resumeUrl,
+=======
+    this.resumeUrl,
+    this.aiMatchScore,
+    this.aiMatchReasoning,
+>>>>>>> origin/main
     this.candidateName,
     this.candidateEmail,
     this.jobTitle,

@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
-import 'dart:io';
 import 'package:retrofit/retrofit.dart';
+import 'package:json_annotation/json_annotation.dart';
 
 import '../models/job_requisition.dart';
 import '../models/candidate.dart';
@@ -15,7 +15,7 @@ part 'api_client.g.dart';
 Dio createDio() {
   final dio = Dio(
     BaseOptions(
-      baseUrl: 'http://localhost:8000/api/v1',
+      baseUrl: 'http://127.0.0.1:8000/api/v1',
       connectTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 30),
       headers: {
@@ -40,14 +40,14 @@ Dio createDio() {
         // Handle 401 errors (token expired)
         if (error.response?.statusCode == 401) {
           final refreshToken = await TokenStorage.getRefreshToken();
-
+          
           if (refreshToken != null) {
             try {
               // Create a temporary Dio instance for the refresh request
               // to avoid infinite loops and interceptor conflicts
               final refreshDio = Dio(
                 BaseOptions(
-                  baseUrl: 'http://localhost:8000/api/v1',
+                  baseUrl: 'http://127.0.0.1:8000/api/v1',
                   headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
@@ -56,39 +56,39 @@ Dio createDio() {
               );
 
               // Call refresh endpoint
-              final response = await refreshDio.post('/auth/refresh',
-                  queryParameters: {'refresh_token': refreshToken});
+              final response = await refreshDio.post(
+                '/auth/refresh', 
+                queryParameters: {'refresh_token': refreshToken}
+              );
 
               if (response.statusCode == 200) {
                 // Parse new tokens
                 final data = response.data;
                 final newAccessToken = data['access_token'];
                 final newRefreshToken = data['refresh_token'];
-
+                
                 // Save new tokens
                 await TokenStorage.saveTokens(
                   accessToken: newAccessToken,
                   refreshToken: newRefreshToken,
                 );
-
+                
                 // Retry the original request with new token
                 final options = error.requestOptions;
                 options.headers['Authorization'] = 'Bearer $newAccessToken';
-
+                
                 final cloneReq = await dio.fetch(options);
                 return handler.resolve(cloneReq);
               }
             } catch (e) {
               // Refresh failed - clean up
               await TokenStorage.clearTokens();
-              navigatorKey.currentState
-                  ?.pushNamedAndRemoveUntil('/login', (route) => false);
+              navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
             }
           } else {
             // No refresh token - clean up
             await TokenStorage.clearTokens();
-            navigatorKey.currentState
-                ?.pushNamedAndRemoveUntil('/login', (route) => false);
+            navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
           }
         }
         return handler.next(error);
@@ -165,9 +165,6 @@ abstract class ApiClient {
   @POST('/job-requisitions/{id}/generate-jd')
   Future<JobRequisition> generateJobDescription(@Path('id') String id);
 
-  @POST('/job-requisitions/{id}/share-linkedin')
-  Future<HttpResponse<dynamic>> shareRequisitionLinkedIn(@Path('id') String id);
-
   // ============================================================================
   // Job Postings Endpoints - Using HttpResponse for dynamic data
   // ============================================================================
@@ -181,29 +178,28 @@ abstract class ApiClient {
   });
 
   @GET('/job-postings/{id}')
-  Future<HttpResponse<dynamic>> getJobPosting(@Path('id') int id);
+  Future<HttpResponse<dynamic>> getJobPosting(@Path('id') String id);
 
   @POST('/job-postings/')
-  Future<HttpResponse<dynamic>> createJobPosting(
-      @Body() Map<String, dynamic> data);
+  Future<HttpResponse<dynamic>> createJobPosting(@Body() Map<String, dynamic> data);
 
   @PUT('/job-postings/{id}')
   Future<HttpResponse<dynamic>> updateJobPosting(
-    @Path('id') int id,
+    @Path('id') String id,
     @Body() Map<String, dynamic> data,
   );
 
   @DELETE('/job-postings/{id}')
-  Future<void> deleteJobPosting(@Path('id') int id);
+  Future<void> deleteJobPosting(@Path('id') String id);
 
   @POST('/job-postings/{id}/publish')
   Future<HttpResponse<dynamic>> publishJobPosting(
-    @Path('id') int id,
+    @Path('id') String id,
     @Body() Map<String, dynamic> platforms,
   );
 
   @POST('/job-postings/{id}/expire')
-  Future<HttpResponse<dynamic>> expireJobPosting(@Path('id') int id);
+  Future<HttpResponse<dynamic>> expireJobPosting(@Path('id') String id);
 
   // ============================================================================
   // Candidates Endpoints
@@ -218,25 +214,25 @@ abstract class ApiClient {
   });
 
   @GET('/candidates/{id}')
-  Future<Candidate> getCandidate(@Path('id') int id);
+  Future<Candidate> getCandidate(@Path('id') String id);
 
   @POST('/candidates/')
   Future<Candidate> createCandidate(@Body() Map<String, dynamic> data);
 
   @PUT('/candidates/{id}')
   Future<Candidate> updateCandidate(
-    @Path('id') int id,
+    @Path('id') String id,
     @Body() Map<String, dynamic> data,
   );
 
   @DELETE('/candidates/{id}')
-  Future<void> deleteCandidate(@Path('id') int id);
+  Future<void> deleteCandidate(@Path('id') String id);
 
   @POST('/candidates/{id}/upload-resume')
   @MultiPart()
   Future<HttpResponse<dynamic>> uploadResume(
     @Path('id') String id,
-    @Part() File file,
+    @Part() dynamic file,
   );
 
   @POST('/candidates/{id}/parse-resume')
@@ -244,7 +240,7 @@ abstract class ApiClient {
 
   @POST('/candidates/{id}/blacklist')
   Future<Candidate> blacklistCandidate(
-    @Path('id') int id,
+    @Path('id') String id,
     @Body() Map<String, dynamic> data,
   );
 
@@ -257,33 +253,35 @@ abstract class ApiClient {
     @Query('skip') int skip = 0,
     @Query('limit') int limit = 100,
     @Query('status') String? status,
-    @Query('job_posting_id') int? jobPostingId,
+    @Query('job_posting_id') String? jobPostingId,
   });
 
   @GET('/applications/{id}')
-  Future<HttpResponse<dynamic>> getApplication(@Path('id') int id);
+  Future<HttpResponse<dynamic>> getApplication(@Path('id') String id);
 
   @POST('/applications/')
-  Future<HttpResponse<dynamic>> submitApplication(
-      @Body() Map<String, dynamic> data);
+  Future<HttpResponse<dynamic>> submitApplication(@Body() Map<String, dynamic> data);
 
   @PUT('/applications/{id}/status')
   Future<HttpResponse<dynamic>> updateApplicationStatus(
-    @Path('id') int id,
+    @Path('id') String id,
     @Body() Map<String, dynamic> data,
   );
 
   @POST('/applications/{id}/shortlist')
-  Future<HttpResponse<dynamic>> shortlistApplication(@Path('id') int id);
+  Future<HttpResponse<dynamic>> shortlistApplication(@Path('id') String id);
 
   @POST('/applications/{id}/reject')
   Future<HttpResponse<dynamic>> rejectApplication(
-    @Path('id') int id,
+    @Path('id') String id,
     @Body() Map<String, dynamic> data,
   );
 
   @POST('/applications/{id}/calculate-match-score')
-  Future<HttpResponse<dynamic>> calculateMatchScore(@Path('id') int id);
+  Future<HttpResponse<dynamic>> calculateMatchScore(@Path('id') String id);
+
+  @POST('/applications/rank-all')
+  Future<HttpResponse<dynamic>> rankAll();
 
   // ============================================================================
   // Interviews Endpoints
@@ -294,44 +292,44 @@ abstract class ApiClient {
     @Query('skip') int skip = 0,
     @Query('limit') int limit = 100,
     @Query('status') String? status,
-    @Query('candidate_id') int? candidateId,
+    @Query('candidate_id') String? candidateId,
   });
 
   @GET('/interviews/{id}')
-  Future<Interview> getInterview(@Path('id') int id);
+  Future<Interview> getInterview(@Path('id') String id);
 
   @POST('/interviews/')
   Future<Interview> scheduleInterview(@Body() Map<String, dynamic> data);
 
   @PUT('/interviews/{id}')
   Future<Interview> updateInterview(
-    @Path('id') int id,
+    @Path('id') String id,
     @Body() Map<String, dynamic> data,
   );
 
   @POST('/interviews/{id}/reschedule')
   Future<Interview> rescheduleInterview(
-    @Path('id') int id,
+    @Path('id') String id,
     @Body() Map<String, dynamic> data,
   );
 
   @POST('/interviews/{id}/cancel')
   Future<Interview> cancelInterview(
-    @Path('id') int id,
+    @Path('id') String id,
     @Body() Map<String, dynamic> data,
   );
 
   @POST('/interviews/{id}/complete')
-  Future<Interview> completeInterview(@Path('id') int id);
+  Future<Interview> completeInterview(@Path('id') String id);
 
   @POST('/interviews/{id}/feedback')
   Future<HttpResponse<dynamic>> submitInterviewFeedback(
-    @Path('id') int id,
+    @Path('id') String id,
     @Body() Map<String, dynamic> data,
   );
 
   @GET('/interviews/{id}/feedback')
-  Future<HttpResponse<dynamic>> getInterviewFeedback(@Path('id') int id);
+  Future<HttpResponse<dynamic>> getInterviewFeedback(@Path('id') String id);
 
   // ============================================================================
   // Offers Endpoints
@@ -342,44 +340,44 @@ abstract class ApiClient {
     @Query('skip') int skip = 0,
     @Query('limit') int limit = 100,
     @Query('status') String? status,
-    @Query('candidate_id') int? candidateId,
+    @Query('candidate_id') String? candidateId,
   });
 
   @GET('/offers/{id}')
-  Future<Offer> getOffer(@Path('id') int id);
+  Future<Offer> getOffer(@Path('id') String id);
 
   @POST('/offers/')
   Future<Offer> createOffer(@Body() Map<String, dynamic> data);
 
   @PUT('/offers/{id}')
   Future<Offer> updateOffer(
-    @Path('id') int id,
+    @Path('id') String id,
     @Body() Map<String, dynamic> data,
   );
 
   @POST('/offers/{id}/approve')
   Future<Offer> approveOffer(
-    @Path('id') int id,
+    @Path('id') String id,
     @Body() Map<String, dynamic> data,
   );
 
   @POST('/offers/{id}/send')
-  Future<Offer> sendOffer(@Path('id') int id);
+  Future<Offer> sendOffer(@Path('id') String id);
 
   @POST('/offers/{id}/accept')
   Future<Offer> acceptOffer(
-    @Path('id') int id,
+    @Path('id') String id,
     @Body() Map<String, dynamic> data,
   );
 
   @POST('/offers/{id}/revise')
   Future<Offer> reviseOffer(
-    @Path('id') int id,
+    @Path('id') String id,
     @Body() Map<String, dynamic> data,
   );
 
   @POST('/offers/{id}/withdraw')
-  Future<Offer> withdrawOffer(@Path('id') int id);
+  Future<Offer> withdrawOffer(@Path('id') String id);
 
   // ============================================================================
   // Dashboard Endpoints - Using HttpResponse for dynamic data
@@ -396,16 +394,13 @@ abstract class ApiClient {
   // ============================================================================
 
   @GET('/onboarding/{offer_id}/status')
-  Future<HttpResponse<dynamic>> getOnboardingStatus(
-      @Path('offer_id') int offerId);
+  Future<HttpResponse<dynamic>> getOnboardingStatus(@Path('offer_id') String offerId);
 
   @POST('/onboarding/tasks')
-  Future<HttpResponse<dynamic>> createOnboardingTask(
-      @Body() Map<String, dynamic> data);
+  Future<HttpResponse<dynamic>> createOnboardingTask(@Body() Map<String, dynamic> data);
 
   @POST('/onboarding/verify')
-  Future<HttpResponse<dynamic>> verifyDocument(
-      @Body() Map<String, dynamic> data);
+  Future<HttpResponse<dynamic>> verifyDocument(@Body() Map<String, dynamic> data);
 
   // ============================================================================
   // Referrals Endpoints - Using HttpResponse for dynamic data
@@ -419,15 +414,14 @@ abstract class ApiClient {
   });
 
   @GET('/referrals/{id}/status')
-  Future<HttpResponse<dynamic>> getReferralStatus(@Path('id') int id);
+  Future<HttpResponse<dynamic>> getReferralStatus(@Path('id') String id);
 
   @POST('/referrals/')
-  Future<HttpResponse<dynamic>> createReferral(
-      @Body() Map<String, dynamic> data);
+  Future<HttpResponse<dynamic>> createReferral(@Body() Map<String, dynamic> data);
 
   @POST('/referrals/{id}/approve-bonus')
   Future<HttpResponse<dynamic>> approveReferralBonus(
-    @Path('id') int id,
+    @Path('id') String id,
     @Body() Map<String, dynamic> data,
   );
 
@@ -448,6 +442,5 @@ abstract class ApiClient {
   Future<HttpResponse<dynamic>> getPortalMessages();
 
   @POST('/portal/messages')
-  Future<HttpResponse<dynamic>> sendPortalMessage(
-      @Body() Map<String, dynamic> data);
+  Future<HttpResponse<dynamic>> sendPortalMessage(@Body() Map<String, dynamic> data);
 }

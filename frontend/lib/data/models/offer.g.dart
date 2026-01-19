@@ -7,8 +7,13 @@ part of 'offer.dart';
 // **************************************************************************
 
 Offer _$OfferFromJson(Map<String, dynamic> json) => Offer(
+<<<<<<< HEAD
       id: (json['id'] as num?)?.toInt(),
       applicationId: (json['application_id'] as num).toInt(),
+=======
+      id: json['id'] as String?,
+      applicationId: json['application_id'] as String,
+>>>>>>> origin/main
       baseSalary: (json['base_salary'] as num).toDouble(),
       bonus: (json['bonus'] as num?)?.toDouble(),
       stockOptions: (json['stock_options'] as num?)?.toDouble(),

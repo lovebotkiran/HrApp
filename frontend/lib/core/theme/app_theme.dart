@@ -5,46 +5,81 @@ class AppTheme {
   static const Color primaryColor = Color(0xFF04A1FF);
   static const Color primaryDark = Color(0xFF0381CC);
   static const Color primaryLight = Color(0xFF36B3FF);
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> origin/main
   // Background Colors
   static const Color backgroundColor = Color(0xFFF5F7FA);
   static const Color surfaceColor = Color(0xFFFFFFFF);
   static const Color cardColor = Color(0xFFFFFFFF);
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> origin/main
   // Text Colors
   static const Color textPrimary = Color(0xFF1A1A1A);
   static const Color textSecondary = Color(0xFF6B7280);
   static const Color textHint = Color(0xFF9CA3AF);
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> origin/main
   // Status Colors
   static const Color successColor = Color(0xFF10B981);
   static const Color warningColor = Color(0xFFF59E0B);
   static const Color errorColor = Color(0xFFEF4444);
   static const Color infoColor = Color(0xFF3B82F6);
+<<<<<<< HEAD
 
   // Border Colors
   static const Color borderColor = Color(0xFFE5E7EB);
   static const Color dividerColor = Color(0xFFE5E7EB);
 
+=======
+  
+  // Border Colors
+  static const Color borderColor = Color(0xFFE5E7EB);
+  static const Color dividerColor = Color(0xFFE5E7EB);
+  
+>>>>>>> origin/main
   // Light Theme
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
     primaryColor: primaryColor,
     scaffoldBackgroundColor: backgroundColor,
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> origin/main
     // Color Scheme
     colorScheme: const ColorScheme.light(
       primary: primaryColor,
       secondary: primaryDark,
       surface: surfaceColor,
+<<<<<<< HEAD
+=======
+      background: backgroundColor,
+>>>>>>> origin/main
       error: errorColor,
       onPrimary: Colors.white,
       onSecondary: Colors.white,
       onSurface: textPrimary,
+<<<<<<< HEAD
       onError: Colors.white,
     ),
 
+=======
+      onBackground: textPrimary,
+      onError: Colors.white,
+    ),
+    
+>>>>>>> origin/main
     // App Bar Theme
     appBarTheme: const AppBarTheme(
       backgroundColor: Colors.white,
@@ -59,7 +94,11 @@ class AppTheme {
         fontFamily: 'Inter',
       ),
     ),
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> origin/main
     // Card Theme
     cardTheme: CardThemeData(
       color: cardColor,
@@ -69,7 +108,11 @@ class AppTheme {
         borderRadius: BorderRadius.circular(12),
       ),
     ),
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> origin/main
     // Elevated Button Theme
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
@@ -87,7 +130,11 @@ class AppTheme {
         ),
       ),
     ),
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> origin/main
     // Outlined Button Theme
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
@@ -104,7 +151,11 @@ class AppTheme {
         ),
       ),
     ),
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> origin/main
     // Text Button Theme
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
@@ -117,7 +168,11 @@ class AppTheme {
         ),
       ),
     ),
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> origin/main
     // Input Decoration Theme
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
@@ -154,7 +209,11 @@ class AppTheme {
         fontFamily: 'Inter',
       ),
     ),
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> origin/main
     // Text Theme
     textTheme: const TextTheme(
       displayLarge: TextStyle(
@@ -248,20 +307,32 @@ class AppTheme {
         fontFamily: 'Inter',
       ),
     ),
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> origin/main
     // Icon Theme
     iconTheme: const IconThemeData(
       color: textPrimary,
       size: 24,
     ),
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> origin/main
     // Divider Theme
     dividerTheme: const DividerThemeData(
       color: dividerColor,
       thickness: 1,
       space: 1,
     ),
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> origin/main
     // Chip Theme
     chipTheme: ChipThemeData(
       backgroundColor: primaryColor.withOpacity(0.1),
@@ -276,11 +347,19 @@ class AppTheme {
         borderRadius: BorderRadius.circular(16),
       ),
     ),
+<<<<<<< HEAD
 
     // Font Family
     fontFamily: 'Inter',
   );
 
+=======
+    
+    // Font Family
+    fontFamily: 'Inter',
+  );
+  
+>>>>>>> origin/main
   // Dark Theme (Optional - can be implemented later)
   static ThemeData darkTheme = ThemeData(
     useMaterial3: true,
