@@ -25,6 +25,7 @@ import 'package:agentichr_frontend/presentation/screens/applications/ai_rankings
 import 'package:agentichr_frontend/data/models/candidate.dart';
 
 import 'package:agentichr_frontend/presentation/screens/job_postings/create_job_posting_screen.dart';
+import 'package:agentichr_frontend/presentation/screens/job_postings/application_form_screen.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -95,6 +96,21 @@ class AgenticHRApp extends StatelessWidget {
             builder: (context) => CreateCandidateScreen(candidate: candidate),
           );
         }
+        if (settings.name == '/apply') {
+          final id = settings.arguments as String?;
+          if (id != null) {
+            return MaterialPageRoute(
+              builder: (context) => ApplicationFormScreen(jobPostingId: id),
+            );
+          }
+        }
+        if (settings.name != null && settings.name!.startsWith('/apply/')) {
+          final id = settings.name!.replaceFirst('/apply/', '');
+          return MaterialPageRoute(
+            builder: (context) => ApplicationFormScreen(jobPostingId: id),
+          );
+        }
+
         return null;
       },
     );

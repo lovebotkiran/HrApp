@@ -6,9 +6,15 @@ import 'package:agentichr_frontend/core/theme/app_theme.dart';
 import 'package:agentichr_frontend/domain/providers/providers.dart';
 
 class ApplicationFormScreen extends ConsumerStatefulWidget {
-  final Map<String, dynamic> jobPosting;
+  final Map<String, dynamic>? jobPosting;
+  final String? jobPostingId;
 
-  const ApplicationFormScreen({super.key, required this.jobPosting});
+  const ApplicationFormScreen({
+    super.key,
+    this.jobPosting,
+    this.jobPostingId,
+  }) : assert(jobPosting != null || jobPostingId != null,
+            'Either jobPosting or jobPostingId must be provided');
 
   @override
   ConsumerState<ApplicationFormScreen> createState() =>
@@ -17,6 +23,8 @@ class ApplicationFormScreen extends ConsumerStatefulWidget {
 
 class _ApplicationFormScreenState extends ConsumerState<ApplicationFormScreen> {
   final _formKey = GlobalKey<FormState>();
+  Map<String, dynamic>? _jobPosting;
+  bool _isLoading = false;
 
   // Controllers
   final _firstNameController = TextEditingController();
@@ -27,6 +35,37 @@ class _ApplicationFormScreenState extends ConsumerState<ApplicationFormScreen> {
 
   PlatformFile? _resumeFile;
   bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.jobPosting != null) {
+      _jobPosting = widget.jobPosting;
+    } else if (widget.jobPostingId != null) {
+      _fetchJobPosting();
+    }
+  }
+
+  Future<void> _fetchJobPosting() async {
+    setState(() => _isLoading = true);
+    try {
+      final repo = ref.read(jobPostingRepositoryProvider);
+      final posting = await repo.getJobPosting(widget.jobPostingId!);
+      if (mounted) {
+        setState(() {
+          _jobPosting = posting;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading job details: $e')),
+        );
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -53,6 +92,8 @@ class _ApplicationFormScreenState extends ConsumerState<ApplicationFormScreen> {
 
   Future<void> _submitApplication() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_jobPosting == null) return;
+
     if (_resumeFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please upload a resume')),
@@ -76,7 +117,7 @@ class _ApplicationFormScreenState extends ConsumerState<ApplicationFormScreen> {
       };
 
       final applicationData = {
-        "job_posting_id": widget.jobPosting['id'],
+        "job_posting_id": _jobPosting!['id'],
         "candidate_data": candidateData,
         "source": "Career Page",
         "cover_letter": _coverLetterController.text.trim()
@@ -131,9 +172,21 @@ class _ApplicationFormScreenState extends ConsumerState<ApplicationFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_jobPosting == null) {
+      return const Scaffold(
+        body: Center(child: Text('Job details not found')),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Apply for ${widget.jobPosting['title']}'),
+        title: Text('Apply for ${_jobPosting!['title']}'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),

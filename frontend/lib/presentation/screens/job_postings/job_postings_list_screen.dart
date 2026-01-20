@@ -114,69 +114,7 @@ class _JobPostingsListScreenState extends ConsumerState<JobPostingsListScreen> {
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                       child: Row(
                         children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () {
-                                final String applyLink =
-                                    "https://agentichr-app.com/jobs/${posting['requisition_id']}";
-                                // In a real app, use the actual domain or config
-
-                                // Show dialog with link or copy to clipboard
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: const Text('Share Job Posting'),
-                                    content: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const Text(
-                                            'Share this link with candidates:'),
-                                        const SizedBox(height: 8),
-                                        SelectableText(
-                                          applyLink,
-                                          style: const TextStyle(
-                                              fontWeight: FontWeight.bold),
-                                        ),
-                                      ],
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        child: const Text('Close'),
-                                      ),
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          // Clipboard functionality would go here
-                                          // import 'package:flutter/services.dart';
-                                          // Clipboard.setData(ClipboardData(text: applyLink));
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            const SnackBar(
-                                                content: Text(
-                                                    'Link copied to clipboard (simulated)')),
-                                          );
-                                          Navigator.pop(context);
-                                        },
-                                        child: const Text('Copy Link'),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                              icon: const Icon(Icons.share),
-                              label: const Text('Share Link'),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppTheme.primaryColor,
-                                side: BorderSide(
-                                    color:
-                                        AppTheme.primaryColor.withOpacity(0.5)),
-                              ),
-                            ),
-                          ),
-                          if (applicationsCount > 0) ...[
-                            const SizedBox(width: 12),
+                          if (applicationsCount > 0)
                             Expanded(
                               child: ElevatedButton.icon(
                                 onPressed: () {
@@ -200,7 +138,10 @@ class _JobPostingsListScreenState extends ConsumerState<JobPostingsListScreen> {
                                 ),
                               ),
                             ),
-                          ],
+                          if (applicationsCount == 0)
+                            // Placeholder or empty if no actions
+                            const Text('No candidates yet',
+                                style: TextStyle(color: Colors.grey))
                         ],
                       ),
                     ),

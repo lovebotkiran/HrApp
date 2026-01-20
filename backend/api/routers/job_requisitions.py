@@ -408,9 +408,21 @@ async def share_requisition_linkedin(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="LinkedIn sharing is currently disabled in settings"
         )
+        
+    # Find associated Job Posting to get the ID for the URL
+    from infrastructure.database.models import JobPosting
+    posting = db.query(JobPosting).filter(
+        JobPosting.requisition_id == requisition.id 
+    ).first()
+    
+    # If no posting exists (should have been auto-created), fall back to requisition ID
+    target_id = posting.id if posting else requisition.id
 
-    # In a real app, this URL would point to the public job application page
-    apply_url = f"{settings.FRONTEND_URL}/jobs/{requisition_id}"
+    # Construct apply URL matching frontend route /apply/{id}
+    # Note: Using hash routing if applicable, e.g. /#/apply/
+    # If settings.FRONTEND_URL includes trailing slash, handle it
+    base_url = settings.FRONTEND_URL.rstrip('/')
+    apply_url = f"{base_url}/#/apply/{target_id}"
     
     result = await linkedin_service.share_job(
         title=requisition.title,
