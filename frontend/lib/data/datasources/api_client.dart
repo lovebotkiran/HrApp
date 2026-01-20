@@ -233,10 +233,9 @@ abstract class ApiClient {
   Future<void> deleteCandidate(@Path('id') String id);
 
   @POST('/candidates/{id}/upload-resume')
-  @MultiPart()
   Future<HttpResponse<dynamic>> uploadResume(
     @Path('id') String id,
-    @Part() dynamic file,
+    @Body() FormData file,
   );
 
   @POST('/candidates/{id}/parse-resume')

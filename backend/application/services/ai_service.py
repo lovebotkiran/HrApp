@@ -60,7 +60,10 @@ class AIService:
             "experience": [
                 {{ "company": "string", "role": "string", "duration": "string", "description": "string" }}
             ],
-            "total_experience_years": number
+            "total_experience_years": number,
+            "highest_education": "string",
+            "current_company": "string",
+            "current_designation": "string"
         }}
         
         Resume Text:

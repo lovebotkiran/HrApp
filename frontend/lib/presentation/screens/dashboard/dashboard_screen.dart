@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:responsive_framework/responsive_framework.dart';
-import 'package:fl_chart/fl_chart.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:agentichr_frontend/core/theme/app_theme.dart';
 import 'package:agentichr_frontend/domain/providers/providers.dart';
-import '../../widgets/responsive_layout.dart';
+import 'package:agentichr_frontend/data/models/application.dart';
 import '../../widgets/stat_card.dart';
 import '../../widgets/pipeline_widget.dart';
 
@@ -24,9 +23,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final isDesktop = ResponsiveBreakpoints.of(context).largerThan(TABLET);
     final metricsAsync = ref.watch(dashboardMetricsProvider);
     final pipelineAsync = ref.watch(pipelineStatsProvider);
-    final recentAppsAsync = ref.watch(applicationsProvider(const {'limit': 5}));
+    final recentAppsAsync =
+        ref.watch(applicationsProvider(ApplicationFilter()));
     final userAsync = ref.watch(currentUserProvider);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dashboard'),
@@ -40,7 +40,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             backgroundColor: AppTheme.primaryColor,
             child: Text(
               userAsync.when(
-                data: (user) => (user['name'] as String? ?? 'A')[0].toUpperCase(),
+                data: (user) =>
+                    (user['name'] as String? ?? 'A')[0].toUpperCase(),
                 loading: () => '',
                 error: (_, __) => '?',
               ),
@@ -69,11 +70,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   Text(
                     'Here\'s what\'s happening with your recruitment today.',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppTheme.textSecondary,
-                    ),
+                          color: AppTheme.textSecondary,
+                        ),
                   ),
                   const SizedBox(height: 32),
-                  
+
                   // Stats Cards
                   metricsAsync.when(
                     data: (metrics) {
@@ -88,7 +89,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       }
 
                       return ResponsiveRowColumn(
-                        layout: ResponsiveBreakpoints.of(context).smallerThan(DESKTOP)
+                        layout: ResponsiveBreakpoints.of(context)
+                                .smallerThan(DESKTOP)
                             ? ResponsiveRowColumnType.COLUMN
                             : ResponsiveRowColumnType.ROW,
                         rowSpacing: 16,
@@ -98,7 +100,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             rowFlex: 1,
                             child: StatCard(
                               title: 'Total Applications',
-                              value: getMetricValue(metrics['total_applications']),
+                              value:
+                                  getMetricValue(metrics['total_applications']),
                               change: '+12%',
                               isPositive: true,
                               icon: Icons.assignment_outlined,
@@ -120,7 +123,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             rowFlex: 1,
                             child: StatCard(
                               title: 'Interviews Scheduled',
-                              value: getMetricValue(metrics['interviews_scheduled']),
+                              value: getMetricValue(
+                                  metrics['interviews_scheduled']),
                               change: '-3%',
                               isPositive: false,
                               icon: Icons.calendar_today_outlined,
@@ -141,11 +145,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         ],
                       );
                     },
-                    loading: () => const Center(child: LinearProgressIndicator()),
+                    loading: () =>
+                        const Center(child: LinearProgressIndicator()),
                     error: (_, __) => const Text('Failed to load metrics'),
                   ),
                   const SizedBox(height: 32),
-                  
+
                   // Recruitment Pipeline
                   Card(
                     child: Padding(
@@ -162,15 +167,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             data: (stats) => PipelineWidget(
                               stages: Map<String, int>.from(stats),
                             ),
-                            loading: () => const Center(child: CircularProgressIndicator()),
-                            error: (_, __) => const Text('Failed to load pipeline'),
+                            loading: () => const Center(
+                                child: CircularProgressIndicator()),
+                            error: (_, __) =>
+                                const Text('Failed to load pipeline'),
                           ),
                         ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 24),
-                  
+
                   // Recent Activity
                   Card(
                     child: Padding(
@@ -183,7 +190,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             children: [
                               Text(
                                 'Recent Applications',
-                                style: Theme.of(context).textTheme.headlineSmall,
+                                style:
+                                    Theme.of(context).textTheme.headlineSmall,
                               ),
                               TextButton(
                                 onPressed: () {
@@ -195,42 +203,53 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           ),
                           const SizedBox(height: 16),
                           recentAppsAsync.when(
-                              data: (apps) {
-                                if (apps.isEmpty) {
-                                  return const Text('No recent applications');
-                                }
-                                return ListView.separated(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: apps.length,
-                                  separatorBuilder: (context, index) => const Divider(),
-                                  itemBuilder: (context, index) {
-                                    final app = apps[index];
-                                    return ListTile(
-                                      contentPadding: EdgeInsets.zero,
-                                      leading: CircleAvatar(
-                                        backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
-                                        child: Text(
-                                          (app['candidate_name'] as String? ?? 'U')[0],
-                                          style: const TextStyle(
-                                            color: AppTheme.primaryColor,
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                            data: (apps) {
+                              if (apps.isEmpty) {
+                                return const Text('No recent applications');
+                              }
+                              return ListView.separated(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: apps.length,
+                                separatorBuilder: (context, index) =>
+                                    const Divider(),
+                                itemBuilder: (context, index) {
+                                  final app = apps[index];
+                                  return ListTile(
+                                    contentPadding: EdgeInsets.zero,
+                                    leading: CircleAvatar(
+                                      backgroundColor: AppTheme.primaryColor
+                                          .withOpacity(0.1),
+                                      child: Text(
+                                        (app['candidate_name'] as String? ??
+                                            'U')[0],
+                                        style: const TextStyle(
+                                          color: AppTheme.primaryColor,
+                                          fontWeight: FontWeight.bold,
                                         ),
                                       ),
-                                      title: Text(app['candidate_name'] as String? ?? 'Unknown'),
-                                      subtitle: Text(app['job_title'] as String? ?? 'Unknown Position'),
-                                      trailing: Chip(
-                                        label: Text(app['status'] as String? ?? 'New'),
-                                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                                      ),
-                                    );
-                                  },
-                                );
-                              },
-                              loading: () => const Center(child: CircularProgressIndicator()),
-                              error: (_, __) => const Text('Failed to load recent applications'),
-                            ),
+                                    ),
+                                    title: Text(
+                                        app['candidate_name'] as String? ??
+                                            'Unknown'),
+                                    subtitle: Text(
+                                        app['job_title'] as String? ??
+                                            'Unknown Position'),
+                                    trailing: Chip(
+                                      label: Text(
+                                          app['status'] as String? ?? 'New'),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                            loading: () => const Center(
+                                child: CircularProgressIndicator()),
+                            error: (_, __) => const Text(
+                                'Failed to load recent applications'),
+                          ),
                         ],
                       ),
                     ),
@@ -261,9 +280,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             child: Text(
               'AgenticHR',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                color: AppTheme.primaryColor,
-                fontWeight: FontWeight.bold,
-              ),
+                    color: AppTheme.primaryColor,
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
           ),
           const SizedBox(height: 32),
@@ -287,7 +306,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Widget _buildNavItem(IconData icon, String label, int index) {
     final isSelected = _selectedIndex == index;
-    
+
     return ListTile(
       leading: Icon(
         icon,
@@ -337,14 +356,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 Text(
                   'Admin User',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: Colors.white,
-                  ),
+                        color: Colors.white,
+                      ),
                 ),
                 Text(
                   'admin@agentichr.com',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.white70,
-                  ),
+                        color: Colors.white70,
+                      ),
                 ),
               ],
             ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:dio/dio.dart';
 import 'package:agentichr_frontend/core/theme/app_theme.dart';
 import 'package:agentichr_frontend/domain/providers/providers.dart';
 
@@ -16,14 +17,14 @@ class ApplicationFormScreen extends ConsumerStatefulWidget {
 
 class _ApplicationFormScreenState extends ConsumerState<ApplicationFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  
+
   // Controllers
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _coverLetterController = TextEditingController();
-  
+
   PlatformFile? _resumeFile;
   bool _isSubmitting = false;
 
@@ -62,60 +63,69 @@ class _ApplicationFormScreenState extends ConsumerState<ApplicationFormScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      final candidateRepo = ref.read(candidateRepositoryProvider);
       final applicationRepo = ref.read(applicationRepositoryProvider);
+      final candidateRepo = ref.read(candidateRepositoryProvider);
 
-      // 1. Create Candidate (or check existing - API handles check)
       final candidateData = {
         "first_name": _firstNameController.text.trim(),
         "last_name": _lastNameController.text.trim(),
         "email": _emailController.text.trim(),
-        "phone": _phoneController.text.trim(),
+        "phone": _phoneController.text.trim().isEmpty
+            ? null
+            : _phoneController.text.trim(),
       };
-      
-      final candidate = await candidateRepo.createCandidate(candidateData);
 
-      // TODO: Upload Resume - Requires web-compatible file upload implementation
-      // await candidateRepo.uploadResume(candidate.id.toString(), _resumeFile!);
-
-      // TODO: Trigger Resume Parsing (Background or Explicit)
-      // try {
-      //     await candidateRepo.parseResume(candidate.id.toString());
-      // } catch (e) {
-      //     // Ignore parsing errors, it shouldn't block application
-      //     print("Resume parsing failed: $e");
-      // }
-
-      // 4. Submit Application
       final applicationData = {
         "job_posting_id": widget.jobPosting['id'],
-        "candidate_data": candidateData, // Schema might need this or just ID
+        "candidate_data": candidateData,
         "source": "Career Page",
-        "cover_letter": _coverLetterController.text
+        "cover_letter": _coverLetterController.text.trim()
       };
-      
-      // Since my backend schema for ApplicationCreate expects 'candidate_data', 
-      // I am passing it. But ideally we should just pass candidate_id if it exists.
-      // Retrying logic: app router submit_application handles 'create or get candidate'.
-      
-      await applicationRepo.submitApplication(applicationData);
+
+      final response = await applicationRepo.submitApplication(applicationData);
+      final candidateId = response['candidate_id'] as String;
+
+      // Upload Resume if selected
+      if (_resumeFile != null) {
+        final formData = FormData.fromMap({
+          'file': MultipartFile.fromBytes(
+            _resumeFile!.bytes!,
+            filename: _resumeFile!.name,
+          ),
+        });
+        await candidateRepo.uploadResume(candidateId, formData);
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Application submitted successfully!')),
         );
-        Navigator.pop(context); // Go back to detail or list
+        Navigator.pop(context);
       }
     } catch (e) {
+      String errorMessage = 'Error submitting application';
+      if (e is DioException) {
+        final data = e.response?.data;
+        if (data is Map && data.containsKey('detail')) {
+          errorMessage = data['detail'];
+        } else if (data is Map && data.containsKey('message')) {
+          errorMessage = data['message'];
+        } else {
+          errorMessage = e.message ?? errorMessage;
+        }
+      } else {
+        errorMessage = e.toString();
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error submitting application: $e')),
+          SnackBar(content: Text(errorMessage)),
         );
       }
     } finally {
-        if (mounted) {
-            setState(() => _isSubmitting = false);
-        }
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
     }
   }
 
@@ -137,13 +147,13 @@ class _ApplicationFormScreenState extends ConsumerState<ApplicationFormScreen> {
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 16),
-              
               Row(
                 children: [
                   Expanded(
                     child: TextFormField(
                       controller: _firstNameController,
-                      decoration: const InputDecoration(labelText: 'First Name *'),
+                      decoration:
+                          const InputDecoration(labelText: 'First Name *'),
                       validator: (v) => v?.isEmpty == true ? 'Required' : null,
                     ),
                   ),
@@ -151,14 +161,14 @@ class _ApplicationFormScreenState extends ConsumerState<ApplicationFormScreen> {
                   Expanded(
                     child: TextFormField(
                       controller: _lastNameController,
-                      decoration: const InputDecoration(labelText: 'Last Name *'),
+                      decoration:
+                          const InputDecoration(labelText: 'Last Name *'),
                       validator: (v) => v?.isEmpty == true ? 'Required' : null,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
-              
               TextFormField(
                 controller: _emailController,
                 decoration: const InputDecoration(labelText: 'Email *'),
@@ -166,20 +176,17 @@ class _ApplicationFormScreenState extends ConsumerState<ApplicationFormScreen> {
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 16),
-              
               TextFormField(
                 controller: _phoneController,
                 decoration: const InputDecoration(labelText: 'Phone'),
                 keyboardType: TextInputType.phone,
               ),
               const SizedBox(height: 32),
-              
               Text(
                 'Resume / CV',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 16),
-              
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -190,36 +197,35 @@ class _ApplicationFormScreenState extends ConsumerState<ApplicationFormScreen> {
                 child: Column(
                   children: [
                     if (_resumeFile != null) ...[
-                        Icon(Icons.description, size: 48, color: AppTheme.primaryColor),
-                        const SizedBox(height: 8),
-                        Text(_resumeFile!.name),
-                        const SizedBox(height: 8),
-                        TextButton(
-                            onPressed: _pickResume,
-                            child: const Text('Change Resume'),
-                        )
+                      Icon(Icons.description,
+                          size: 48, color: AppTheme.primaryColor),
+                      const SizedBox(height: 8),
+                      Text(_resumeFile!.name),
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: _pickResume,
+                        child: const Text('Change Resume'),
+                      )
                     ] else ...[
-                        const Icon(Icons.cloud_upload_outlined, size: 48, color: Colors.grey),
-                        const SizedBox(height: 8),
-                        const Text('Upload your resume (PDF, DOC, DOCX)'),
-                        const SizedBox(height: 16),
-                        OutlinedButton(
-                            onPressed: _pickResume,
-                            child: const Text('Select File'),
-                        )
+                      const Icon(Icons.cloud_upload_outlined,
+                          size: 48, color: Colors.grey),
+                      const SizedBox(height: 8),
+                      const Text('Upload your resume (PDF, DOC, DOCX)'),
+                      const SizedBox(height: 16),
+                      OutlinedButton(
+                        onPressed: _pickResume,
+                        child: const Text('Select File'),
+                      )
                     ]
                   ],
                 ),
               ),
-              
               const SizedBox(height: 32),
-              
               Text(
                 'Cover Letter',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 16),
-              
               TextFormField(
                 controller: _coverLetterController,
                 decoration: const InputDecoration(
@@ -229,17 +235,18 @@ class _ApplicationFormScreenState extends ConsumerState<ApplicationFormScreen> {
                 ),
                 maxLines: 5,
               ),
-              
               const SizedBox(height: 48),
-              
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
                   onPressed: _isSubmitting ? null : _submitApplication,
-                  child: _isSubmitting 
-                     ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                     : const Text('Submit Application'),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Text('Submit Application'),
                 ),
               ),
             ],

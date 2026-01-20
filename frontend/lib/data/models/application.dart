@@ -28,6 +28,7 @@ class Application {
     if (score is String) return double.tryParse(score);
     return null;
   }
+
   @JsonKey(name: 'ai_match_reasoning')
   final String? aiMatchReasoning;
   @JsonKey(name: 'candidate_name')
@@ -54,6 +55,25 @@ class Application {
     this.jobTitle,
   });
 
-  factory Application.fromJson(Map<String, dynamic> json) => _$ApplicationFromJson(json);
+  factory Application.fromJson(Map<String, dynamic> json) =>
+      _$ApplicationFromJson(json);
   Map<String, dynamic> toJson() => _$ApplicationToJson(this);
+}
+
+class ApplicationFilter {
+  final String? status;
+  final String? jobPostingId;
+
+  ApplicationFilter({this.status, this.jobPostingId});
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ApplicationFilter &&
+          runtimeType == other.runtimeType &&
+          status == other.status &&
+          jobPostingId == other.jobPostingId;
+
+  @override
+  int get hashCode => status.hashCode ^ jobPostingId.hashCode;
 }

@@ -5,17 +5,19 @@ import uuid
 from datetime import datetime
 import shutil
 import os
+import logging
 
 from infrastructure.database.connection import get_db
 from infrastructure.database.models import (
     Candidate, CandidateDocument, User
 )
 from infrastructure.security.auth import get_current_user
-from application.schemas import CandidateCreate, CandidateResponse, MessageResponse
+from application.schemas import CandidateCreate, CandidateUpdate, CandidateResponse, MessageResponse
 from application.services.ai_service import AIService
 
 router = APIRouter()
 ai_service = AIService()
+logger = logging.getLogger(__name__)
 
 
 @router.post("/", response_model=CandidateResponse, status_code=status.HTTP_201_CREATED)
@@ -117,7 +119,7 @@ async def get_candidate(
 @router.put("/{candidate_id}", response_model=CandidateResponse)
 async def update_candidate(
     candidate_id: str,
-    candidate_data: CandidateCreate,
+    candidate_data: CandidateUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -287,6 +289,13 @@ async def parse_resume(
             candidate.phone = parsed_data["phone"]
             
         candidate.skills = parsed_data.get("skills", [])
+        
+        if parsed_data.get("highest_education"):
+            candidate.highest_education = parsed_data["highest_education"]
+        if parsed_data.get("current_company"):
+            candidate.current_company = parsed_data["current_company"]
+        if parsed_data.get("current_designation"):
+            candidate.current_designation = parsed_data["current_designation"]
         
         # Convert experience to decimal if possible
         exp = parsed_data.get("total_experience_years")

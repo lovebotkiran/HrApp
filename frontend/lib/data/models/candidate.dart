@@ -18,12 +18,32 @@ class Candidate {
   @JsonKey(name: 'portfolio_url')
   final String? portfolioUrl;
   final List<String>? skills;
-  final String? experience;
-  final String? education;
+  @JsonKey(name: 'total_experience_years', fromJson: _parseDecimal)
+  final double? totalExperienceYears;
+  @JsonKey(name: 'highest_education')
+  final String? highestEducation;
+  @JsonKey(name: 'current_company')
+  final String? currentCompany;
+  @JsonKey(name: 'current_designation')
+  final String? currentDesignation;
+  @JsonKey(name: 'current_location')
+  final String? currentLocation;
+  @JsonKey(name: 'preferred_location')
+  final String? preferredLocation;
+  @JsonKey(name: 'current_ctc', fromJson: _parseDecimal)
+  final double? currentCTC;
+  @JsonKey(name: 'expected_ctc', fromJson: _parseDecimal)
+  final double? expectedCTC;
+  @JsonKey(name: 'notice_period_days')
+  final int? noticePeriodDays;
   final List<String>? certifications;
   final List<String>? languages;
   @JsonKey(name: 'created_at')
   final DateTime? createdAt;
+  @JsonKey(name: 'is_blacklisted')
+  final bool? isBlacklisted;
+  @JsonKey(name: 'blacklist_reason')
+  final String? blacklistReason;
 
   Candidate({
     this.id,
@@ -35,13 +55,30 @@ class Candidate {
     this.linkedinUrl,
     this.portfolioUrl,
     this.skills,
-    this.experience,
-    this.education,
+    this.totalExperienceYears,
+    this.highestEducation,
+    this.currentCompany,
+    this.currentDesignation,
+    this.currentLocation,
+    this.preferredLocation,
+    this.currentCTC,
+    this.expectedCTC,
+    this.noticePeriodDays,
     this.certifications,
     this.languages,
     this.createdAt,
+    this.isBlacklisted,
+    this.blacklistReason,
   });
 
-  factory Candidate.fromJson(Map<String, dynamic> json) => _$CandidateFromJson(json);
+  static double? _parseDecimal(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
+  }
+
+  factory Candidate.fromJson(Map<String, dynamic> json) =>
+      _$CandidateFromJson(json);
   Map<String, dynamic> toJson() => _$CandidateToJson(this);
 }

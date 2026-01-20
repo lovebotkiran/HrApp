@@ -2,20 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:agentichr_frontend/core/theme/app_theme.dart';
 import 'package:agentichr_frontend/domain/providers/providers.dart';
+import 'package:agentichr_frontend/data/models/application.dart';
 
 class ApplicationsListScreen extends ConsumerStatefulWidget {
   const ApplicationsListScreen({super.key});
 
   @override
-  ConsumerState<ApplicationsListScreen> createState() => _ApplicationsListScreenState();
+  ConsumerState<ApplicationsListScreen> createState() =>
+      _ApplicationsListScreenState();
 }
 
-class _ApplicationsListScreenState extends ConsumerState<ApplicationsListScreen> {
+class _ApplicationsListScreenState
+    extends ConsumerState<ApplicationsListScreen> {
   String? _selectedStatus;
 
   @override
   Widget build(BuildContext context) {
-    final applicationsAsync = ref.watch(applicationsProvider({'status': _selectedStatus}));
+    final applicationsAsync = ref.watch(
+        applicationsProvider(ApplicationFilter(status: _selectedStatus)));
 
     return Scaffold(
       appBar: AppBar(
@@ -32,7 +36,8 @@ class _ApplicationsListScreenState extends ConsumerState<ApplicationsListScreen>
               const PopupMenuItem(value: 'All', child: Text('All')),
               const PopupMenuItem(value: 'New', child: Text('New')),
               const PopupMenuItem(value: 'Screening', child: Text('Screening')),
-              const PopupMenuItem(value: 'Shortlisted', child: Text('Shortlisted')),
+              const PopupMenuItem(
+                  value: 'Shortlisted', child: Text('Shortlisted')),
               const PopupMenuItem(value: 'Rejected', child: Text('Rejected')),
             ],
           ),
@@ -45,7 +50,8 @@ class _ApplicationsListScreenState extends ConsumerState<ApplicationsListScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.assignment_outlined, size: 64, color: AppTheme.textSecondary),
+                  Icon(Icons.assignment_outlined,
+                      size: 64, color: AppTheme.textSecondary),
                   const SizedBox(height: 16),
                   Text(
                     'No applications found',
@@ -69,7 +75,7 @@ class _ApplicationsListScreenState extends ConsumerState<ApplicationsListScreen>
             itemBuilder: (context, index) {
               final app = applications[index];
               final matchScore = app['match_score'] as double?;
-              
+
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 child: ListTile(
@@ -97,7 +103,8 @@ class _ApplicationsListScreenState extends ConsumerState<ApplicationsListScreen>
                       if (matchScore != null)
                         Row(
                           children: [
-                            Icon(Icons.analytics, size: 16, color: AppTheme.textSecondary),
+                            Icon(Icons.analytics,
+                                size: 16, color: AppTheme.textSecondary),
                             const SizedBox(width: 4),
                             Text('Match: ${matchScore.toStringAsFixed(0)}%'),
                           ],
@@ -136,7 +143,8 @@ class _ApplicationsListScreenState extends ConsumerState<ApplicationsListScreen>
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
-                onPressed: () => ref.refresh(applicationsProvider({'status': _selectedStatus})),
+                onPressed: () => ref.refresh(applicationsProvider(
+                    ApplicationFilter(status: _selectedStatus))),
                 icon: const Icon(Icons.refresh),
                 label: const Text('Retry'),
               ),

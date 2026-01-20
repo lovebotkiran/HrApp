@@ -1,14 +1,9 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../datasources/api_client.dart';
 import '../models/job_requisition.dart';
 import '../models/candidate.dart';
 import '../models/interview.dart';
-import '../models/offer.dart';
-import '../models/job_posting.dart';
-import '../models/application.dart';
-import '../models/onboarding_task.dart';
-import '../models/referral.dart';
-import '../models/dashboard_metrics.dart';
+import 'package:agentichr_frontend/data/models/offer.dart';
+import 'package:dio/dio.dart';
 import '../../core/services/token_storage.dart';
 
 class JobRequisitionRepository {
@@ -92,9 +87,12 @@ class CandidateRepository {
   Future<Candidate> createCandidate(Map<String, dynamic> data) =>
       _apiClient.createCandidate(data);
 
+  Future<Candidate> updateCandidate(String id, Map<String, dynamic> data) =>
+      _apiClient.updateCandidate(id, data);
+
   Future<Candidate> getCandidate(String id) => _apiClient.getCandidate(id);
 
-  Future<void> uploadResume(String candidateId, dynamic file) async {
+  Future<void> uploadResume(String candidateId, FormData file) async {
     await _apiClient.uploadResume(candidateId, file);
   }
 

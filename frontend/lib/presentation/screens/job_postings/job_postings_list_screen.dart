@@ -9,7 +9,8 @@ class JobPostingsListScreen extends ConsumerStatefulWidget {
   const JobPostingsListScreen({super.key});
 
   @override
-  ConsumerState<JobPostingsListScreen> createState() => _JobPostingsListScreenState();
+  ConsumerState<JobPostingsListScreen> createState() =>
+      _JobPostingsListScreenState();
 }
 
 class _JobPostingsListScreenState extends ConsumerState<JobPostingsListScreen> {
@@ -46,7 +47,8 @@ class _JobPostingsListScreenState extends ConsumerState<JobPostingsListScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.post_add_outlined, size: 64, color: AppTheme.textSecondary),
+                  Icon(Icons.post_add_outlined,
+                      size: 64, color: AppTheme.textSecondary),
                   const SizedBox(height: 16),
                   Text(
                     'No job postings found',
@@ -70,7 +72,7 @@ class _JobPostingsListScreenState extends ConsumerState<JobPostingsListScreen> {
             itemBuilder: (context, index) {
               final posting = postings[index];
               final applicationsCount = posting['applications_count'] ?? 0;
-              
+
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 child: Column(
@@ -90,11 +92,13 @@ class _JobPostingsListScreenState extends ConsumerState<JobPostingsListScreen> {
                           const SizedBox(height: 4),
                           Row(
                             children: [
-                              Icon(Icons.visibility, size: 16, color: AppTheme.textSecondary),
+                              Icon(Icons.visibility,
+                                  size: 16, color: AppTheme.textSecondary),
                               const SizedBox(width: 4),
                               Text('${posting['views_count'] ?? 0} views'),
                               const SizedBox(width: 16),
-                              Icon(Icons.assignment, size: 16, color: AppTheme.textSecondary),
+                              Icon(Icons.assignment,
+                                  size: 16, color: AppTheme.textSecondary),
                               const SizedBox(width: 4),
                               Text('$applicationsCount applications'),
                             ],
@@ -117,7 +121,8 @@ class _JobPostingsListScreenState extends ConsumerState<JobPostingsListScreen> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => ApplicationFormScreen(jobPosting: posting),
+                                    builder: (context) => ApplicationFormScreen(
+                                        jobPosting: posting),
                                   ),
                                 );
                               },
@@ -125,7 +130,9 @@ class _JobPostingsListScreenState extends ConsumerState<JobPostingsListScreen> {
                               label: const Text('Apply'),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: AppTheme.primaryColor,
-                                side: BorderSide(color: AppTheme.primaryColor.withOpacity(0.5)),
+                                side: BorderSide(
+                                    color:
+                                        AppTheme.primaryColor.withOpacity(0.5)),
                               ),
                             ),
                           ),
@@ -137,9 +144,11 @@ class _JobPostingsListScreenState extends ConsumerState<JobPostingsListScreen> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => RankedCandidatesScreen(
+                                      builder: (context) =>
+                                          RankedCandidatesScreen(
                                         jobPostingId: posting['id'] ?? '',
-                                        jobTitle: posting['title'] ?? 'Job Posting',
+                                        jobTitle:
+                                            posting['title'] ?? 'Job Posting',
                                       ),
                                     ),
                                   );
@@ -183,7 +192,8 @@ class _JobPostingsListScreenState extends ConsumerState<JobPostingsListScreen> {
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
-                onPressed: () => ref.refresh(jobPostingsProvider(_selectedStatus)),
+                onPressed: () =>
+                    ref.refresh(jobPostingsProvider(_selectedStatus)),
                 icon: const Icon(Icons.refresh),
                 label: const Text('Retry'),
               ),
@@ -193,7 +203,7 @@ class _JobPostingsListScreenState extends ConsumerState<JobPostingsListScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          // TODO: Navigate to create posting screen
+          Navigator.pushNamed(context, '/job-postings/create');
         },
         icon: const Icon(Icons.add),
         label: const Text('New Posting'),

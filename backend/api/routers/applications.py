@@ -123,7 +123,11 @@ async def list_applications(
     """
     List all applications with filtering.
     """
-    query = db.query(Application)
+    from sqlalchemy.orm import joinedload
+    query = db.query(Application).options(
+        joinedload(Application.candidate),
+        joinedload(Application.job_posting)
+    )
     
     # Apply filters
     if status:

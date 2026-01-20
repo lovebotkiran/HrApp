@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:agentichr_frontend/core/theme/app_theme.dart';
 import 'package:agentichr_frontend/domain/providers/providers.dart';
 import 'package:agentichr_frontend/data/models/candidate.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class CandidateDetailScreen extends ConsumerWidget {
   final String candidateId;
@@ -20,7 +21,13 @@ class CandidateDetailScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.edit),
             onPressed: () {
-              // TODO: Navigate to edit candidate
+              candidateAsync.whenData((candidate) {
+                Navigator.pushNamed(
+                  context,
+                  '/candidates/edit',
+                  arguments: candidate,
+                );
+              });
             },
             tooltip: 'Edit Candidate',
           ),
@@ -39,7 +46,8 @@ class CandidateDetailScreen extends ConsumerWidget {
                   style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: () => ref.refresh(candidateDetailProvider(candidateId)),
+                onPressed: () =>
+                    ref.refresh(candidateDetailProvider(candidateId)),
                 child: const Text('Retry'),
               ),
             ],
@@ -62,7 +70,10 @@ class CandidateDetailScreen extends ConsumerWidget {
                 radius: 40,
                 backgroundColor: AppTheme.primaryColor,
                 child: Text(
-                  '${candidate.firstName[0]}${candidate.lastName[0]}',
+                  candidate.firstName.isNotEmpty &&
+                          candidate.lastName.isNotEmpty
+                      ? '${candidate.firstName[0]}${candidate.lastName[0]}'
+                      : '?',
                   style: const TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
@@ -77,9 +88,10 @@ class CandidateDetailScreen extends ConsumerWidget {
                   children: [
                     Text(
                       '${candidate.firstName} ${candidate.lastName}',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -104,17 +116,38 @@ class CandidateDetailScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 32),
 
-          // Details Section
           _buildInfoSection(
             context,
             title: 'Professional Details',
             icon: Icons.work_outline,
             children: [
-              _buildInfoRow(context, 'Experience', candidate.experience ?? 'Not specified'),
-              _buildInfoRow(context, 'Education', candidate.education ?? 'Not specified'),
-              if (candidate.linkedinUrl != null)
+              _buildInfoRow(
+                  context,
+                  'Experience',
+                  candidate.totalExperienceYears != null
+                      ? '${candidate.totalExperienceYears} years'
+                      : 'Not specified'),
+              _buildInfoRow(context, 'Education',
+                  candidate.highestEducation ?? 'Not specified'),
+              _buildInfoRow(
+                  context,
+                  'Current Role',
+                  candidate.currentDesignation != null &&
+                          candidate.currentCompany != null
+                      ? '${candidate.currentDesignation} at ${candidate.currentCompany}'
+                      : candidate.currentDesignation ??
+                          candidate.currentCompany ??
+                          'Not specified'),
+              if (candidate.linkedinUrl != null &&
+                  candidate.linkedinUrl!.isNotEmpty)
                 _buildInfoRow(context, 'LinkedIn', candidate.linkedinUrl!),
-              if (candidate.portfolioUrl != null)
+              if (candidate.currentLocation != null)
+                _buildInfoRow(context, 'Location', candidate.currentLocation!),
+              if (candidate.expectedCTC != null)
+                _buildInfoRow(
+                    context, 'Expected CTC', '${candidate.expectedCTC}'),
+              if (candidate.portfolioUrl != null &&
+                  candidate.portfolioUrl!.isNotEmpty)
                 _buildInfoRow(context, 'Portfolio', candidate.portfolioUrl!),
             ],
           ),
@@ -132,7 +165,8 @@ class CandidateDetailScreen extends ConsumerWidget {
                   label: Text(skill),
                   backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
                   labelStyle: TextStyle(color: AppTheme.primaryColor),
-                  side: BorderSide(color: AppTheme.primaryColor.withOpacity(0.2)),
+                  side:
+                      BorderSide(color: AppTheme.primaryColor.withOpacity(0.2)),
                 );
               }).toList(),
             ),
@@ -140,8 +174,10 @@ class CandidateDetailScreen extends ConsumerWidget {
           ],
 
           // Certifications
-          if (candidate.certifications != null && candidate.certifications!.isNotEmpty) ...[
-            _buildSectionTitle(context, 'Certifications', Icons.verified_outlined),
+          if (candidate.certifications != null &&
+              candidate.certifications!.isNotEmpty) ...[
+            _buildSectionTitle(
+                context, 'Certifications', Icons.verified_outlined),
             const SizedBox(height: 12),
             Column(
               children: candidate.certifications!.map((cert) {
@@ -157,7 +193,8 @@ class CandidateDetailScreen extends ConsumerWidget {
           ],
 
           // Languages
-          if (candidate.languages != null && candidate.languages!.isNotEmpty) ...[
+          if (candidate.languages != null &&
+              candidate.languages!.isNotEmpty) ...[
             _buildSectionTitle(context, 'Languages', Icons.translate_outlined),
             const SizedBox(height: 12),
             Wrap(
@@ -173,14 +210,24 @@ class CandidateDetailScreen extends ConsumerWidget {
           ],
 
           const SizedBox(height: 40),
-          
+
           // Action Buttons
           Row(
             children: [
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    // TODO: Open resume
+                    if (candidate.resumeUrl != null) {
+                      String url = candidate.resumeUrl!;
+                      if (url.startsWith('uploads/')) {
+                        url = 'http://localhost:8000/$url';
+                      }
+                      launchUrl(Uri.parse(url));
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('No resume uploaded')),
+                      );
+                    }
                   },
                   icon: const Icon(Icons.description_outlined),
                   label: const Text('View Resume'),
@@ -193,7 +240,7 @@ class CandidateDetailScreen extends ConsumerWidget {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () {
-                    // TODO: Send email
+                    launchUrl(Uri.parse('mailto:${candidate.email}'));
                   },
                   icon: const Icon(Icons.email_outlined),
                   label: const Text('Contact'),
@@ -225,7 +272,9 @@ class CandidateDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildInfoSection(BuildContext context,
-      {required String title, required IconData icon, required List<Widget> children}) {
+      {required String title,
+      required IconData icon,
+      required List<Widget> children}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

@@ -178,6 +178,27 @@ class CandidateCreate(CandidateBase):
     pass
 
 
+class CandidateUpdate(BaseModel):
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    current_location: Optional[str] = None
+    preferred_location: Optional[str] = None
+    current_company: Optional[str] = None
+    current_designation: Optional[str] = None
+    total_experience_years: Optional[Decimal] = None
+    current_ctc: Optional[Decimal] = None
+    expected_ctc: Optional[Decimal] = None
+    notice_period_days: Optional[int] = None
+    highest_education: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    portfolio_url: Optional[str] = None
+    skills: Optional[List[str]] = None
+    certifications: Optional[List[str]] = None
+    languages: Optional[List[str]] = None
+
+
 class CandidateResponse(CandidateBase):
     id: UUID
     resume_url: Optional[str]

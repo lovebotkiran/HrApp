@@ -22,6 +22,9 @@ import 'package:agentichr_frontend/presentation/screens/interviews/create_interv
 import 'package:agentichr_frontend/presentation/screens/offers/create_offer_screen.dart';
 import 'package:agentichr_frontend/presentation/screens/candidates/candidate_detail_screen.dart';
 import 'package:agentichr_frontend/presentation/screens/applications/ai_rankings_screen.dart';
+import 'package:agentichr_frontend/data/models/candidate.dart';
+
+import 'package:agentichr_frontend/presentation/screens/job_postings/create_job_posting_screen.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -43,7 +46,7 @@ class AgenticHRApp extends StatelessWidget {
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      
+
       // Responsive Framework
       builder: (context, child) => ResponsiveBreakpoints.builder(
         child: child!,
@@ -54,7 +57,7 @@ class AgenticHRApp extends StatelessWidget {
           const Breakpoint(start: 1921, end: double.infinity, name: '4K'),
         ],
       ),
-      
+
       // Routes
       initialRoute: '/login',
       routes: {
@@ -71,7 +74,9 @@ class AgenticHRApp extends StatelessWidget {
         '/candidate-portal': (context) => const CandidatePortalScreen(),
         '/analytics': (context) => const AnalyticsScreen(),
         '/settings': (context) => const SettingsScreen(),
-        '/job-requisitions/create': (context) => const CreateJobRequisitionScreen(),
+        '/job-requisitions/create': (context) =>
+            const CreateJobRequisitionScreen(),
+        '/job-postings/create': (context) => const CreateJobPostingScreen(),
         '/candidates/create': (context) => const CreateCandidateScreen(),
         '/interviews/create': (context) => const CreateInterviewScreen(),
         '/offers/create': (context) => const CreateOfferScreen(),
@@ -82,6 +87,12 @@ class AgenticHRApp extends StatelessWidget {
           final id = settings.arguments as String;
           return MaterialPageRoute(
             builder: (context) => CandidateDetailScreen(candidateId: id),
+          );
+        }
+        if (settings.name == '/candidates/edit') {
+          final candidate = settings.arguments as Candidate;
+          return MaterialPageRoute(
+            builder: (context) => CreateCandidateScreen(candidate: candidate),
           );
         }
         return null;

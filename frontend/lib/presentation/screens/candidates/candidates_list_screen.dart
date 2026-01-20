@@ -7,7 +7,8 @@ class CandidatesListScreen extends ConsumerStatefulWidget {
   const CandidatesListScreen({super.key});
 
   @override
-  ConsumerState<CandidatesListScreen> createState() => _CandidatesListScreenState();
+  ConsumerState<CandidatesListScreen> createState() =>
+      _CandidatesListScreenState();
 }
 
 class _CandidatesListScreenState extends ConsumerState<CandidatesListScreen> {
@@ -68,7 +69,8 @@ class _CandidatesListScreenState extends ConsumerState<CandidatesListScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.people_outline, size: 64, color: AppTheme.textSecondary),
+                        Icon(Icons.people_outline,
+                            size: 64, color: AppTheme.textSecondary),
                         const SizedBox(height: 16),
                         Text(
                           'No candidates found',
@@ -95,7 +97,8 @@ class _CandidatesListScreenState extends ConsumerState<CandidatesListScreen> {
                             style: const TextStyle(color: Colors.white),
                           ),
                         ),
-                        title: Text('${candidate.firstName} ${candidate.lastName}'),
+                        title: Text(
+                            '${candidate.firstName} ${candidate.lastName}'),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -125,12 +128,15 @@ class _CandidatesListScreenState extends ConsumerState<CandidatesListScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.error_outline, size: 64, color: AppTheme.errorColor),
+                    Icon(Icons.error_outline,
+                        size: 64, color: AppTheme.errorColor),
                     const SizedBox(height: 16),
-                    Text('Error loading candidates', style: Theme.of(context).textTheme.titleLarge),
+                    Text('Error loading candidates',
+                        style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
-                      onPressed: () => ref.refresh(candidatesProvider(_searchQuery)),
+                      onPressed: () =>
+                          ref.refresh(candidatesProvider(_searchQuery)),
                       icon: const Icon(Icons.refresh),
                       label: const Text('Retry'),
                     ),
