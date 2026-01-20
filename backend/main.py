@@ -4,6 +4,8 @@ from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 import time
 import logging
+import os
+from fastapi.staticfiles import StaticFiles
 
 from core.config import settings
 from infrastructure.database.connection import init_db
@@ -47,6 +49,10 @@ app = FastAPI(
     openapi_url=f"{settings.API_PREFIX}/openapi.json",
     lifespan=lifespan
 )
+
+# Mount static files
+os.makedirs("uploads", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # CORS Middleware
 if settings.DEBUG:

@@ -8,7 +8,8 @@ class CreateInterviewScreen extends ConsumerStatefulWidget {
   const CreateInterviewScreen({super.key});
 
   @override
-  ConsumerState<CreateInterviewScreen> createState() => _CreateInterviewScreenState();
+  ConsumerState<CreateInterviewScreen> createState() =>
+      _CreateInterviewScreenState();
 }
 
 class _CreateInterviewScreenState extends ConsumerState<CreateInterviewScreen> {
@@ -22,7 +23,12 @@ class _CreateInterviewScreenState extends ConsumerState<CreateInterviewScreen> {
   String _interviewType = 'Technical';
   bool _isLoading = false;
 
-  final List<String> _interviewTypes = ['Technical', 'HR', 'Managerial', 'Behavioral'];
+  final List<String> _interviewTypes = [
+    'Technical',
+    'HR',
+    'Managerial',
+    'Behavioral'
+  ];
 
   @override
   void dispose() {
@@ -85,7 +91,9 @@ class _CreateInterviewScreenState extends ConsumerState<CreateInterviewScreen> {
           'scheduled_time': scheduledTime.toIso8601String(),
           'duration': int.parse(_durationController.text),
           'interview_type': _interviewType,
-          'meeting_link': _meetingLinkController.text.isEmpty ? null : _meetingLinkController.text,
+          'meeting_link': _meetingLinkController.text.isEmpty
+              ? null
+              : _meetingLinkController.text,
           'status': 'Scheduled',
         });
         if (mounted) {
@@ -151,7 +159,7 @@ class _CreateInterviewScreenState extends ConsumerState<CreateInterviewScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _interviewType,
+                initialValue: _interviewType,
                 decoration: const InputDecoration(
                   labelText: 'Interview Type',
                   border: OutlineInputBorder(),
@@ -237,7 +245,8 @@ class _CreateInterviewScreenState extends ConsumerState<CreateInterviewScreen> {
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2),
                       )
                     : const Text('Schedule Interview'),
               ),

@@ -12,10 +12,12 @@ class CreateJobRequisitionScreen extends ConsumerStatefulWidget {
   const CreateJobRequisitionScreen({super.key, this.requisition});
 
   @override
-  ConsumerState<CreateJobRequisitionScreen> createState() => _CreateJobRequisitionScreenState();
+  ConsumerState<CreateJobRequisitionScreen> createState() =>
+      _CreateJobRequisitionScreenState();
 }
 
-class _CreateJobRequisitionScreenState extends ConsumerState<CreateJobRequisitionScreen> {
+class _CreateJobRequisitionScreenState
+    extends ConsumerState<CreateJobRequisitionScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
@@ -37,12 +39,61 @@ class _CreateJobRequisitionScreenState extends ConsumerState<CreateJobRequisitio
 
   // Department-to-skills mapping
   final Map<String, List<String>> _departmentSkills = {
-    'Technology': ['Python', 'Java', 'JavaScript', 'MySQL', 'MongoDB', 'React', 'Node.js', 'AWS', 'Docker', 'Kubernetes'],
-    'Sales': ['Lead Generation', 'Prospecting', 'Cold Calling', 'Negotiation', 'CRM', 'Sales Strategy', 'Account Management'],
-    'Marketing': ['SEO', 'Content Marketing', 'Social Media', 'Email Marketing', 'Google Analytics', 'PPC', 'Brand Management'],
-    'HR': ['Recruitment', 'Onboarding', 'Performance Management', 'Employee Relations', 'HRIS', 'Compliance'],
-    'Finance': ['Accounting', 'Financial Analysis', 'Budgeting', 'Tax Planning', 'QuickBooks', 'Excel', 'Financial Reporting'],
-    'Operations': ['Process Improvement', 'Supply Chain', 'Logistics', 'Quality Control', 'Project Management', 'Lean Six Sigma'],
+    'Technology': [
+      'Python',
+      'Java',
+      'JavaScript',
+      'MySQL',
+      'MongoDB',
+      'React',
+      'Node.js',
+      'AWS',
+      'Docker',
+      'Kubernetes'
+    ],
+    'Sales': [
+      'Lead Generation',
+      'Prospecting',
+      'Cold Calling',
+      'Negotiation',
+      'CRM',
+      'Sales Strategy',
+      'Account Management'
+    ],
+    'Marketing': [
+      'SEO',
+      'Content Marketing',
+      'Social Media',
+      'Email Marketing',
+      'Google Analytics',
+      'PPC',
+      'Brand Management'
+    ],
+    'HR': [
+      'Recruitment',
+      'Onboarding',
+      'Performance Management',
+      'Employee Relations',
+      'HRIS',
+      'Compliance'
+    ],
+    'Finance': [
+      'Accounting',
+      'Financial Analysis',
+      'Budgeting',
+      'Tax Planning',
+      'QuickBooks',
+      'Excel',
+      'Financial Reporting'
+    ],
+    'Operations': [
+      'Process Improvement',
+      'Supply Chain',
+      'Logistics',
+      'Quality Control',
+      'Project Management',
+      'Lean Six Sigma'
+    ],
   };
 
   List<String> get _availableSkills {
@@ -53,21 +104,25 @@ class _CreateJobRequisitionScreenState extends ConsumerState<CreateJobRequisitio
   @override
   void initState() {
     super.initState();
-    _titleController = TextEditingController(text: widget.requisition?.title ?? '');
-    _descriptionController = TextEditingController(text: widget.requisition?.jobDescription ?? '');
-    
+    _titleController =
+        TextEditingController(text: widget.requisition?.title ?? '');
+    _descriptionController =
+        TextEditingController(text: widget.requisition?.jobDescription ?? '');
+
     _selectedDepartment = widget.requisition?.department;
-    if (_selectedDepartment != null && !_departmentOptions.contains(_selectedDepartment)) {
+    if (_selectedDepartment != null &&
+        !_departmentOptions.contains(_selectedDepartment)) {
       _departmentOptions.add(_selectedDepartment!);
     }
 
     _selectedEmploymentType = widget.requisition?.employmentType;
-    
+
     _selectedExperience = widget.requisition?.experienceMin;
-    if (_selectedExperience != null && (_selectedExperience! < 0 || _selectedExperience! > 25)) {
-       if (_selectedExperience! > 25) {
-         _selectedExperience = null; 
-       }
+    if (_selectedExperience != null &&
+        (_selectedExperience! < 0 || _selectedExperience! > 25)) {
+      if (_selectedExperience! > 25) {
+        _selectedExperience = null;
+      }
     }
 
     _selectedSkills = widget.requisition?.requiredSkills ?? [];
@@ -96,7 +151,9 @@ class _CreateJobRequisitionScreenState extends ConsumerState<CreateJobRequisitio
       final response = await dio.post(
         '/ai/generate-job-description',
         data: {
-          'title': _titleController.text.isNotEmpty ? _titleController.text : 'Position',
+          'title': _titleController.text.isNotEmpty
+              ? _titleController.text
+              : 'Position',
           'department': _selectedDepartment ?? 'Department',
           'skills': _selectedSkills,
           'experience': _selectedExperience ?? 0,
@@ -120,16 +177,19 @@ class _CreateJobRequisitionScreenState extends ConsumerState<CreateJobRequisitio
       if (mounted) {
         String errorMessage = 'Error generating description';
         if (e.response?.statusCode == 503) {
-          errorMessage = 'AI model is loading. Please try again in a few seconds.';
-        } else if (e.response?.data != null && e.response!.data['detail'] != null) {
+          errorMessage =
+              'AI model is loading. Please try again in a few seconds.';
+        } else if (e.response?.data != null &&
+            e.response!.data['detail'] != null) {
           errorMessage = e.response!.data['detail'];
-        } else if (e.type == DioExceptionType.connectionTimeout || 
-                   e.type == DioExceptionType.receiveTimeout) {
+        } else if (e.type == DioExceptionType.connectionTimeout ||
+            e.type == DioExceptionType.receiveTimeout) {
           errorMessage = 'Request timed out. Please try again.';
         } else if (e.type == DioExceptionType.connectionError) {
-          errorMessage = 'Connection error. Please check your internet connection.';
+          errorMessage =
+              'Connection error. Please check your internet connection.';
         }
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errorMessage)),
         );
@@ -170,7 +230,9 @@ class _CreateJobRequisitionScreenState extends ConsumerState<CreateJobRequisitio
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Job Requisition ${widget.requisition != null ? 'updated' : 'created'} successfully')),
+            SnackBar(
+                content: Text(
+                    'Job Requisition ${widget.requisition != null ? 'updated' : 'created'} successfully')),
           );
           Navigator.pop(context);
           ref.refresh(jobRequisitionsProvider(JobRequisitionFilter()));
@@ -198,7 +260,7 @@ class _CreateJobRequisitionScreenState extends ConsumerState<CreateJobRequisitio
     }
 
     final List<String> tempSelected = List.from(_selectedSkills);
-    
+
     await showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -249,7 +311,9 @@ class _CreateJobRequisitionScreenState extends ConsumerState<CreateJobRequisitio
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.requisition != null ? 'Edit Job Requisition' : 'New Job Requisition'),
+        title: Text(widget.requisition != null
+            ? 'Edit Job Requisition'
+            : 'New Job Requisition'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -258,7 +322,7 @@ class _CreateJobRequisitionScreenState extends ConsumerState<CreateJobRequisitio
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-                TextFormField(
+              TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(
                   labelText: 'Job Title',
@@ -273,15 +337,17 @@ class _CreateJobRequisitionScreenState extends ConsumerState<CreateJobRequisitio
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _selectedDepartment,
+                initialValue: _selectedDepartment,
                 decoration: const InputDecoration(
                   labelText: 'Department',
                   border: OutlineInputBorder(),
                 ),
-                items: _departmentOptions.map((dept) => DropdownMenuItem(
-                  value: dept,
-                  child: Text(dept),
-                )).toList(),
+                items: _departmentOptions
+                    .map((dept) => DropdownMenuItem(
+                          value: dept,
+                          child: Text(dept),
+                        ))
+                    .toList(),
                 onChanged: (value) {
                   setState(() {
                     _selectedDepartment = value;
@@ -298,16 +364,19 @@ class _CreateJobRequisitionScreenState extends ConsumerState<CreateJobRequisitio
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _selectedEmploymentType,
+                initialValue: _selectedEmploymentType,
                 decoration: const InputDecoration(
                   labelText: 'Employment Type',
                   border: OutlineInputBorder(),
                 ),
                 items: const [
-                  DropdownMenuItem(value: 'Full-time', child: Text('Full-time')),
-                  DropdownMenuItem(value: 'Part-time', child: Text('Part-time')),
+                  DropdownMenuItem(
+                      value: 'Full-time', child: Text('Full-time')),
+                  DropdownMenuItem(
+                      value: 'Part-time', child: Text('Part-time')),
                   DropdownMenuItem(value: 'Contract', child: Text('Contract')),
-                  DropdownMenuItem(value: 'Internship', child: Text('Internship')),
+                  DropdownMenuItem(
+                      value: 'Internship', child: Text('Internship')),
                 ],
                 onChanged: (value) {
                   setState(() {
@@ -323,15 +392,17 @@ class _CreateJobRequisitionScreenState extends ConsumerState<CreateJobRequisitio
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<int>(
-                value: _selectedExperience,
+                initialValue: _selectedExperience,
                 decoration: const InputDecoration(
                   labelText: 'Experience (yrs)',
                   border: OutlineInputBorder(),
                 ),
-                items: List.generate(26, (index) => DropdownMenuItem(
-                  value: index,
-                  child: Text(index.toString()),
-                )),
+                items: List.generate(
+                    26,
+                    (index) => DropdownMenuItem(
+                          value: index,
+                          child: Text(index.toString()),
+                        )),
                 onChanged: (value) {
                   setState(() {
                     _selectedExperience = value;
@@ -355,19 +426,24 @@ class _CreateJobRequisitionScreenState extends ConsumerState<CreateJobRequisitio
                     suffixIcon: Icon(Icons.arrow_drop_down),
                   ),
                   child: _selectedSkills.isEmpty
-                      ? const Text('Select skills', style: TextStyle(color: Colors.grey))
+                      ? const Text('Select skills',
+                          style: TextStyle(color: Colors.grey))
                       : Wrap(
                           spacing: 8,
                           runSpacing: 4,
-                          children: _selectedSkills.map((skill) => Chip(
-                            label: Text(skill, style: const TextStyle(fontSize: 12)),
-                            deleteIcon: const Icon(Icons.close, size: 16),
-                            onDeleted: () {
-                              setState(() {
-                                _selectedSkills.remove(skill);
-                              });
-                            },
-                          )).toList(),
+                          children: _selectedSkills
+                              .map((skill) => Chip(
+                                    label: Text(skill,
+                                        style: const TextStyle(fontSize: 12)),
+                                    deleteIcon:
+                                        const Icon(Icons.close, size: 16),
+                                    onDeleted: () {
+                                      setState(() {
+                                        _selectedSkills.remove(skill);
+                                      });
+                                    },
+                                  ))
+                              .toList(),
                         ),
                 ),
               ),
@@ -375,7 +451,7 @@ class _CreateJobRequisitionScreenState extends ConsumerState<CreateJobRequisitio
               // Write with AI button
               OutlinedButton.icon(
                 onPressed: _isGenerating ? null : _generateJobDescription,
-                icon: _isGenerating 
+                icon: _isGenerating
                     ? const SizedBox(
                         width: 16,
                         height: 16,
@@ -418,7 +494,9 @@ class _CreateJobRequisitionScreenState extends ConsumerState<CreateJobRequisitio
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
-                        child: Text(widget.requisition != null ? 'Update Draft' : 'Save as Draft'),
+                        child: Text(widget.requisition != null
+                            ? 'Update Draft'
+                            : 'Save as Draft'),
                       ),
                     ),
                     const SizedBox(width: 16),

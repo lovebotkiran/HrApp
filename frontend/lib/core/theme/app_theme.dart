@@ -5,48 +5,46 @@ class AppTheme {
   static const Color primaryColor = Color(0xFF04A1FF);
   static const Color primaryDark = Color(0xFF0381CC);
   static const Color primaryLight = Color(0xFF36B3FF);
-  
+
   // Background Colors
   static const Color backgroundColor = Color(0xFFF5F7FA);
   static const Color surfaceColor = Color(0xFFFFFFFF);
   static const Color cardColor = Color(0xFFFFFFFF);
-  
+
   // Text Colors
   static const Color textPrimary = Color(0xFF1A1A1A);
   static const Color textSecondary = Color(0xFF6B7280);
   static const Color textHint = Color(0xFF9CA3AF);
-  
+
   // Status Colors
   static const Color successColor = Color(0xFF10B981);
   static const Color warningColor = Color(0xFFF59E0B);
   static const Color errorColor = Color(0xFFEF4444);
   static const Color infoColor = Color(0xFF3B82F6);
-  
+
   // Border Colors
   static const Color borderColor = Color(0xFFE5E7EB);
   static const Color dividerColor = Color(0xFFE5E7EB);
-  
+
   // Light Theme
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
     primaryColor: primaryColor,
     scaffoldBackgroundColor: backgroundColor,
-    
+
     // Color Scheme
     colorScheme: const ColorScheme.light(
       primary: primaryColor,
       secondary: primaryDark,
       surface: surfaceColor,
-      background: backgroundColor,
       error: errorColor,
       onPrimary: Colors.white,
       onSecondary: Colors.white,
       onSurface: textPrimary,
-      onBackground: textPrimary,
       onError: Colors.white,
     ),
-    
+
     // App Bar Theme
     appBarTheme: const AppBarTheme(
       backgroundColor: Colors.white,
@@ -61,7 +59,7 @@ class AppTheme {
         fontFamily: 'Inter',
       ),
     ),
-    
+
     // Card Theme
     cardTheme: CardThemeData(
       color: cardColor,
@@ -71,7 +69,7 @@ class AppTheme {
         borderRadius: BorderRadius.circular(12),
       ),
     ),
-    
+
     // Elevated Button Theme
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
@@ -89,7 +87,7 @@ class AppTheme {
         ),
       ),
     ),
-    
+
     // Outlined Button Theme
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
@@ -106,7 +104,7 @@ class AppTheme {
         ),
       ),
     ),
-    
+
     // Text Button Theme
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
@@ -119,7 +117,7 @@ class AppTheme {
         ),
       ),
     ),
-    
+
     // Input Decoration Theme
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
@@ -156,7 +154,7 @@ class AppTheme {
         fontFamily: 'Inter',
       ),
     ),
-    
+
     // Text Theme
     textTheme: const TextTheme(
       displayLarge: TextStyle(
@@ -250,20 +248,20 @@ class AppTheme {
         fontFamily: 'Inter',
       ),
     ),
-    
+
     // Icon Theme
     iconTheme: const IconThemeData(
       color: textPrimary,
       size: 24,
     ),
-    
+
     // Divider Theme
     dividerTheme: const DividerThemeData(
       color: dividerColor,
       thickness: 1,
       space: 1,
     ),
-    
+
     // Chip Theme
     chipTheme: ChipThemeData(
       backgroundColor: primaryColor.withOpacity(0.1),
@@ -278,11 +276,11 @@ class AppTheme {
         borderRadius: BorderRadius.circular(16),
       ),
     ),
-    
+
     // Font Family
     fontFamily: 'Inter',
   );
-  
+
   // Dark Theme (Optional - can be implemented later)
   static ThemeData darkTheme = ThemeData(
     useMaterial3: true,
