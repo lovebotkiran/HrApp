@@ -35,6 +35,8 @@ class JobRequisitionRepository {
       _apiClient.approveRequisition(id, data);
 
   Future<void> shareOnLinkedIn(String id) => _apiClient.shareToLinkedIn(id);
+
+  Future<void> deleteRequisition(String id) => _apiClient.deleteRequisition(id);
 }
 
 class AuthRepository {

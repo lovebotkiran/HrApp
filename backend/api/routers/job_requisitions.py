@@ -237,7 +237,7 @@ async def delete_job_requisition(
     }
 
 
-@router.post("/{requisition_id}/approve", response_model=MessageResponse)
+@router.post("/{requisition_id}/approve", response_model=JobRequisitionResponse)
 async def approve_job_requisition(
     requisition_id: str,
     approval_data: JobRequisitionApprovalRequest,
@@ -263,35 +263,95 @@ async def approve_job_requisition(
     ).order_by(JobRequisitionApproval.approval_level).first()
     
     if not approval:
+        # Self-healing: Check if approvals exist at all
+        all_approvals = db.query(JobRequisitionApproval).filter(
+            JobRequisitionApproval.requisition_id == requisition_id
+        ).order_by(JobRequisitionApproval.approval_level).all()
+        
+        if not all_approvals:
+            # Case 1: No approvals exist - Create default approvals
+            approval_levels = [
+                {"level": 1, "role": "manager"},
+                {"level": 2, "role": "hr"},
+                {"level": 3, "role": "director"}
+            ]
+            
+            for level_info in approval_levels:
+                new_app = JobRequisitionApproval(
+                    requisition_id=requisition.id,
+                    approval_level=level_info["level"],
+                    status="pending"
+                )
+                db.add(new_app)
+            db.commit()
+            
+            # Fetch the first one
+            approval = db.query(JobRequisitionApproval).filter(
+                JobRequisitionApproval.requisition_id == requisition_id,
+                JobRequisitionApproval.status == "pending"
+            ).order_by(JobRequisitionApproval.approval_level).first()
+            
+        else:
+            # Case 2: Approvals exist but none are 'pending'
+            # Check if we have any non-approved ones that should be pending
+            non_approved = [a for a in all_approvals if a.status != 'approved']
+            
+            if not non_approved:
+                # All are approved! The requisition status is inconsistent.
+                # Auto-fix requisition status
+                requisition.status = "approved"
+                db.commit()
+                
+                # Check for Job Posting creation (re-use logic below)
+                # But we can't proceed with 'approval' object logic.
+                # So we jump to the job posting creation block or return early.
+                pass 
+            else:
+                # We have non-approved items (rejected or null/weird).
+                # If rejected, we can't approve.
+                rejected = next((a for a in non_approved if a.status == 'rejected'), None)
+                if rejected:
+                    requisition.status = "rejected"
+                    db.commit()
+                    return {"message": "Requisition is already rejected", "success": True}
+                
+                # If legitimate pending/null, force the first one to be pending
+                next_approval = non_approved[0]
+                next_approval.status = "pending"
+                db.commit()
+                approval = next_approval
+
+    if not approval and requisition.status != "approved":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No pending approval found"
+            detail="No pending approval found and could not heal state"
         )
-    
-    # Update approval
-    approval.approver_id = current_user.id
-    approval.status = approval_data.status
-    approval.comments = approval_data.comments
-    approval.approved_at = datetime.utcnow()
-    
-    # Update requisition status
-    if approval_data.status == "rejected":
-        requisition.status = "rejected"
-    elif approval_data.status == "approved":
-        # Check if all approvals are complete
-        pending_approvals = db.query(JobRequisitionApproval).filter(
-            JobRequisitionApproval.requisition_id == requisition_id,
-            JobRequisitionApproval.status == "pending"
-        ).count()
         
-        if pending_approvals == 0:
-            requisition.status = "approved"
-        else:
-            requisition.status = "pending_approval"
-    
-    db.commit()
+    if approval:
+        # Update approval
+        approval.approver_id = current_user.id
+        approval.status = approval_data.status
+        approval.comments = approval_data.comments
+        approval.approved_at = datetime.utcnow()
+        
+        # Update requisition status based on this action
+        if approval_data.status == "rejected":
+            requisition.status = "rejected"
+        elif approval_data.status == "approved":
+             # Check if all approvals are complete
+            pending_approvals = db.query(JobRequisitionApproval).filter(
+                JobRequisitionApproval.requisition_id == requisition_id,
+                JobRequisitionApproval.status == "pending"
+            ).count()
+            
+            if pending_approvals == 0:
+                requisition.status = "approved"
+            else:
+                requisition.status = "pending_approval"
+        
+        db.commit()
 
-    # Automatically create Job Posting if approved
+    # Automatically create Job Posting if approved (idempotent check inside)
     if requisition.status == "approved":
         # Check if job posting already exists
         from infrastructure.database.models import JobPosting
@@ -330,10 +390,7 @@ async def approve_job_requisition(
             db.add(new_posting)
             db.commit()
     
-    return {
-        "message": f"Requisition {approval_data.status} successfully",
-        "success": True
-    }
+    return requisition
 
 
 @router.post("/{requisition_id}/generate-jd", response_model=MessageResponse)

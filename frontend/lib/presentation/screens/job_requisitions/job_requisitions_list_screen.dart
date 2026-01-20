@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:agentichr_frontend/core/theme/app_theme.dart';
 import 'package:agentichr_frontend/domain/providers/providers.dart';
+import 'package:dio/dio.dart';
 
 import 'package:agentichr_frontend/data/models/job_requisition.dart';
 import 'package:agentichr_frontend/presentation/screens/job_requisitions/create_job_requisition_screen.dart';
@@ -203,6 +204,13 @@ class _JobRequisitionsListScreenState
                                     ),
                                   ),
                                 ),
+                                if (req.status.toLowerCase() == 'draft')
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline,
+                                        color: AppTheme.errorColor),
+                                    onPressed: () => _confirmDelete(req),
+                                    tooltip: 'Delete Requisition',
+                                  ),
                               ],
                             ),
                             onTap: () {
@@ -274,6 +282,56 @@ class _JobRequisitionsListScreenState
         label: const Text('New Requisition'),
       ),
     );
+  }
+
+  Future<void> _confirmDelete(JobRequisition req) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Requisition'),
+        content: Text(
+            'Are you sure you want to delete "${req.title}"? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.errorColor,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        final repo = ref.read(jobRequisitionRepositoryProvider);
+        await repo.deleteRequisition(req.id!);
+        if (mounted) {
+          ref.refresh(jobRequisitionsProvider(JobRequisitionFilter()));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Requisition deleted successfully'),
+              backgroundColor: AppTheme.successColor,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error deleting requisition: $e'),
+              backgroundColor: AppTheme.errorColor,
+            ),
+          );
+        }
+      }
+    }
   }
 
   Future<void> _shareToLinkedIn(JobRequisition req) async {
@@ -356,6 +414,14 @@ class _JobRequisitionsListScreenState
               onPressed: isProcessing
                   ? null
                   : () async {
+                      if (commentsController.text.trim().isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text(
+                                  'Please provide a reason for rejection')),
+                        );
+                        return;
+                      }
                       setDialogState(() => isProcessing = true);
                       try {
                         final repo = ref.read(jobRequisitionRepositoryProvider);
@@ -373,8 +439,17 @@ class _JobRequisitionsListScreenState
                           );
                         }
                       } catch (e) {
+                        String message = 'Error: $e';
+                        if (e is DioException) {
+                          if (e.response?.data != null &&
+                              e.response!.data is Map) {
+                            message =
+                                (e.response!.data as Map)['detail'] ?? message;
+                          }
+                        }
+
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Error: $e')),
+                          SnackBar(content: Text(message)),
                         );
                       } finally {
                         setDialogState(() => isProcessing = false);
