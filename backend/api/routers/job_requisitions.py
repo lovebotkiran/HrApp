@@ -290,6 +290,45 @@ async def approve_job_requisition(
             requisition.status = "pending_approval"
     
     db.commit()
+
+    # Automatically create Job Posting if approved
+    if requisition.status == "approved":
+        # Check if job posting already exists
+        from infrastructure.database.models import JobPosting
+        
+        existing_posting = db.query(JobPosting).filter(
+            JobPosting.requisition_id == requisition.id
+        ).first()
+        
+        if not existing_posting:
+            # Create new job posting
+            new_posting = JobPosting(
+                requisition_id=requisition.id,
+                job_code=requisition.requisition_number,
+                title=requisition.title,
+                description=requisition.job_description or "Detailed job description to be added.",
+                responsibilities=requisition.responsibilities,
+                benefits=requisition.benefits,
+                location=requisition.location,
+                employment_type=requisition.employment_type,
+                experience_min=requisition.experience_min,
+                experience_max=requisition.experience_max,
+                salary_min=requisition.salary_min,
+                salary_max=requisition.salary_max,
+                currency=requisition.currency,
+                skills_required=requisition.required_skills,
+                is_active=True,
+                published_at=datetime.utcnow(),
+                # Default expiration to 30 days from now? Or leave null.
+                # Let's set it to target_hire_date if available, else 30 days
+            )
+            
+            if requisition.target_hire_date:
+                # Convert date to datetime
+                new_posting.expires_at = datetime.combine(requisition.target_hire_date, datetime.min.time())
+            
+            db.add(new_posting)
+            db.commit()
     
     return {
         "message": f"Requisition {approval_data.status} successfully",

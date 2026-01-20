@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:agentichr_frontend/core/theme/app_theme.dart';
 import 'package:agentichr_frontend/domain/providers/providers.dart';
-import 'application_form_screen.dart';
 import '../applications/ranked_candidates_screen.dart';
 
 class JobPostingsListScreen extends ConsumerStatefulWidget {
@@ -118,16 +117,56 @@ class _JobPostingsListScreenState extends ConsumerState<JobPostingsListScreen> {
                           Expanded(
                             child: OutlinedButton.icon(
                               onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ApplicationFormScreen(
-                                        jobPosting: posting),
+                                final String applyLink =
+                                    "https://agentichr-app.com/jobs/${posting['requisition_id']}";
+                                // In a real app, use the actual domain or config
+
+                                // Show dialog with link or copy to clipboard
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text('Share Job Posting'),
+                                    content: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                            'Share this link with candidates:'),
+                                        const SizedBox(height: 8),
+                                        SelectableText(
+                                          applyLink,
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold),
+                                        ),
+                                      ],
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text('Close'),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          // Clipboard functionality would go here
+                                          // import 'package:flutter/services.dart';
+                                          // Clipboard.setData(ClipboardData(text: applyLink));
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            const SnackBar(
+                                                content: Text(
+                                                    'Link copied to clipboard (simulated)')),
+                                          );
+                                          Navigator.pop(context);
+                                        },
+                                        child: const Text('Copy Link'),
+                                      ),
+                                    ],
                                   ),
                                 );
                               },
-                              icon: const Icon(Icons.work_outline),
-                              label: const Text('Apply'),
+                              icon: const Icon(Icons.share),
+                              label: const Text('Share Link'),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: AppTheme.primaryColor,
                                 side: BorderSide(
@@ -201,13 +240,7 @@ class _JobPostingsListScreenState extends ConsumerState<JobPostingsListScreen> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.pushNamed(context, '/job-postings/create');
-        },
-        icon: const Icon(Icons.add),
-        label: const Text('New Posting'),
-      ),
+      // FloatingActionButton removed as per requirement
     );
   }
 
