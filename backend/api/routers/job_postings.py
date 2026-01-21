@@ -66,28 +66,46 @@ async def list_job_postings(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=100),
     is_active: Optional[bool] = None,
+    status: Optional[str] = None,
     employment_type: Optional[str] = None,
     location: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """
     List all job postings (public endpoint).
-    Filter by active status, employment type, and location.
+    Filter by status (Active, Draft, Expired), attributes.
     """
     query = db.query(JobPosting)
+    now = datetime.utcnow()
     
     # Apply filters
+    if status:
+        if status == 'Expired':
+            query = query.filter(JobPosting.expires_at < now)
+        elif status == 'Draft':
+            query = query.filter(JobPosting.is_active == False)
+            # Drafts that are also expired should technically show in expired, so exclude expired here?
+            # User said: "expired only showing in the expired section"
+            query = query.filter(
+                (JobPosting.expires_at.is_(None)) | (JobPosting.expires_at > now)
+            )
+        elif status == 'Active':
+            query = query.filter(JobPosting.is_active == True)
+            query = query.filter(
+                (JobPosting.expires_at.is_(None)) | (JobPosting.expires_at > now)
+            )
+    else:
+        # Default 'All' view: Exclude expired
+        query = query.filter(
+            (JobPosting.expires_at.is_(None)) | (JobPosting.expires_at > now)
+        )
+        
     if is_active is not None:
         query = query.filter(JobPosting.is_active == is_active)
     if employment_type:
         query = query.filter(JobPosting.employment_type == employment_type)
     if location:
         query = query.filter(JobPosting.location.ilike(f"%{location}%"))
-    
-    # Filter out expired postings
-    query = query.filter(
-        (JobPosting.expires_at.is_(None)) | (JobPosting.expires_at > datetime.utcnow())
-    )
     
     postings = query.order_by(JobPosting.created_at.desc()).offset(skip).limit(limit).all()
     return postings

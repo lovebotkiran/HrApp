@@ -143,6 +143,7 @@ class JobPostingResponse(JobPostingBase):
     published_at: Optional[datetime]
     views_count: int
     applications_count: int
+    status: str
     created_at: datetime
     
     class Config:

@@ -150,6 +150,15 @@ class JobPosting(Base):
     created_at = Column(TIMESTAMP, server_default=func.now())
     updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
     
+    @property
+    def status(self):
+        now = datetime.utcnow()
+        if self.expires_at and self.expires_at < now:
+            return "Expired"
+        if not self.is_active:
+            return "Draft"
+        return "Active"
+    
     # Relationships
     requisition = relationship("JobRequisition", back_populates="postings")
     applications = relationship("Application", back_populates="job_posting")
