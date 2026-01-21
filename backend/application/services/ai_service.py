@@ -15,7 +15,12 @@ class AIService:
         # Use host.docker.internal if running in Docker and Ollama is on host
         self.ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
         self.model_name = "llama3" 
-        self.llm = Ollama(base_url=self.ollama_base_url, model=self.model_name)
+        self.llm = Ollama(
+            base_url=self.ollama_base_url, 
+            model=self.model_name,
+            num_predict=2048,
+            num_ctx=4096
+        )
 
     async def extract_text_from_file(self, file_path: str, mime_type: str = "application/pdf") -> str:
         """Extracts text from PDF or plain text files."""
@@ -106,8 +111,30 @@ class AIService:
         4. # What We Offer
         
         Tone: Professional, engaging, and modern.
+        
+        IMPORTANT: Return ONLY the content of the job description. Do NOT include any introductory text (like "Here is the JD") or concluding notes. Start directly with the first section header.
         """
-        return self.llm.invoke(prompt)
+        response = self.llm.invoke(prompt)
+        
+        # Post-processing to ensure no filler remains if the LLM slips up
+        # We expect the first line to start with '#'
+        lines = response.strip().split('\n')
+        start_index = 0
+        for i, line in enumerate(lines):
+            if line.strip().startswith('# '):
+                start_index = i
+                break
+        
+        # If we found a header, assume content starts there. 
+        # Also strip trailing notes (often starting with "Note:" or "Hope this helps")
+        cleaned_lines = lines[start_index:]
+        final_content = []
+        for line in reversed(cleaned_lines):
+            if line.strip().lower().startswith("note:") or "let me know" in line.lower():
+                continue
+            final_content.append(line)
+            
+        return '\n'.join(reversed(final_content)).strip()
 
     async def rank_candidate(self, job_description: str, candidate_profile_json: Dict) -> Dict[str, Any]:
         """Compares candidate profile against JD and returns a score."""

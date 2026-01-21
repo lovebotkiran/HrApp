@@ -25,7 +25,7 @@ class LinkedInService:
             return {"success": False, "message": "LinkedIn access token not configured"}
 
         formatted_title = self._to_bold(f"We are hiring a {title}!")
-        formatted_description = self._format_commentary(description[:5000])
+        formatted_description = self._format_commentary(description)
         apply_text = self._to_bold("Apply here:")
         
         share_text = f"{formatted_title}\n\n{formatted_description}\n\n{apply_text} {apply_url}"

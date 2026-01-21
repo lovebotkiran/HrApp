@@ -313,7 +313,9 @@ class _JobRequisitionsListScreenState
         final repo = ref.read(jobRequisitionRepositoryProvider);
         await repo.deleteRequisition(req.id!);
         if (mounted) {
-          ref.refresh(jobRequisitionsProvider(JobRequisitionFilter()));
+          ref.refresh(jobRequisitionsProvider(JobRequisitionFilter(
+              status: _selectedStatus,
+              search: _searchQuery.isEmpty ? null : _searchQuery)));
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Requisition deleted successfully'),
@@ -431,8 +433,12 @@ class _JobRequisitionsListScreenState
                         });
                         if (mounted) {
                           Navigator.pop(context);
-                          ref.refresh(
-                              jobRequisitionsProvider(JobRequisitionFilter()));
+                          ref.refresh(jobRequisitionsProvider(
+                              JobRequisitionFilter(
+                                  status: _selectedStatus,
+                                  search: _searchQuery.isEmpty
+                                      ? null
+                                      : _searchQuery)));
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                                 content: Text('Requisition rejected')),
@@ -473,8 +479,12 @@ class _JobRequisitionsListScreenState
                         });
                         if (mounted) {
                           Navigator.pop(context);
-                          ref.refresh(
-                              jobRequisitionsProvider(JobRequisitionFilter()));
+                          ref.refresh(jobRequisitionsProvider(
+                              JobRequisitionFilter(
+                                  status: _selectedStatus,
+                                  search: _searchQuery.isEmpty
+                                      ? null
+                                      : _searchQuery)));
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                                 content: Text('Requisition approved')),
