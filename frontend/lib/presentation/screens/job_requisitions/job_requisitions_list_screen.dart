@@ -98,7 +98,14 @@ class _JobRequisitionsListScreenState
           Expanded(
             child: requisitionsAsync.when(
               data: (requisitions) {
-                if (requisitions.isEmpty) {
+                // Filter out rejected items unless explicitly selected
+                final displayRequisitions = _selectedStatus == null
+                    ? requisitions
+                        .where((r) => r.status.toLowerCase() != 'rejected')
+                        .toList()
+                    : requisitions;
+
+                if (displayRequisitions.isEmpty) {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -125,9 +132,9 @@ class _JobRequisitionsListScreenState
 
                 return ListView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  itemCount: requisitions.length,
+                  itemCount: displayRequisitions.length,
                   itemBuilder: (context, index) {
-                    final req = requisitions[index];
+                    final req = displayRequisitions[index];
                     return Card(
                       margin: const EdgeInsets.only(bottom: 12),
                       child: Column(
