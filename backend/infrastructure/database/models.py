@@ -1,8 +1,12 @@
-from sqlalchemy import Column, String, Boolean, Integer, DECIMAL, TIMESTAMP, Text, Date, ForeignKey, ARRAY, JSON, CheckConstraint
+from sqlalchemy import (
+    Column, String, Boolean, Integer, DECIMAL, TIMESTAMP, Text, 
+    Date, ForeignKey, ARRAY, JSON, CheckConstraint, UniqueConstraint
+)
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import uuid
+from datetime import datetime
 from infrastructure.database.connection import Base
 
 
@@ -145,6 +149,7 @@ class JobPosting(Base):
     is_active = Column(Boolean, default=True, index=True)
     published_at = Column(TIMESTAMP)
     expires_at = Column(TIMESTAMP, index=True)
+    status_state = Column(String(50), default="Draft", index=True)
     views_count = Column(Integer, default=0)
     applications_count = Column(Integer, default=0)
     created_at = Column(TIMESTAMP, server_default=func.now())
@@ -152,6 +157,10 @@ class JobPosting(Base):
     
     @property
     def status(self):
+        # Override with manual status if it's set to a terminal state
+        if self.status_state in ["Cancelled", "Rejected", "Expired"]:
+            return self.status_state
+            
         now = datetime.utcnow()
         if self.expires_at and self.expires_at < now:
             return "Expired"
@@ -461,3 +470,16 @@ class Employee(Base):
     # Relationships
     user = relationship("User")
     candidate = relationship("Candidate")
+
+
+class DepartmentSkill(Base):
+    __tablename__ = "department_skills"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    department = Column(String(100), nullable=False, index=True)
+    skill_name = Column(String(100), nullable=False)
+    created_at = Column(TIMESTAMP, server_default=func.now())
+    
+    __table_args__ = (
+        UniqueConstraint('department', 'skill_name', name='_dept_skill_uc'),
+    )

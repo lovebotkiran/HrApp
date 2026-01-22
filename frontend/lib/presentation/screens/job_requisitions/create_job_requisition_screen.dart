@@ -37,68 +37,19 @@ class _CreateJobRequisitionScreenState
     'Operations',
   ];
 
-  // Department-to-skills mapping
-  final Map<String, List<String>> _departmentSkills = {
-    'Technology': [
-      'Python',
-      'Java',
-      'JavaScript',
-      'MySQL',
-      'MongoDB',
-      'React',
-      'Node.js',
-      'AWS',
-      'Docker',
-      'Kubernetes'
-    ],
-    'Sales': [
-      'Lead Generation',
-      'Prospecting',
-      'Cold Calling',
-      'Negotiation',
-      'CRM',
-      'Sales Strategy',
-      'Account Management'
-    ],
-    'Marketing': [
-      'SEO',
-      'Content Marketing',
-      'Social Media',
-      'Email Marketing',
-      'Google Analytics',
-      'PPC',
-      'Brand Management'
-    ],
-    'HR': [
-      'Recruitment',
-      'Onboarding',
-      'Performance Management',
-      'Employee Relations',
-      'HRIS',
-      'Compliance'
-    ],
-    'Finance': [
-      'Accounting',
-      'Financial Analysis',
-      'Budgeting',
-      'Tax Planning',
-      'QuickBooks',
-      'Excel',
-      'Financial Reporting'
-    ],
-    'Operations': [
-      'Process Improvement',
-      'Supply Chain',
-      'Logistics',
-      'Quality Control',
-      'Project Management',
-      'Lean Six Sigma'
-    ],
-  };
+  List<String> _availableSkills = [];
 
-  List<String> get _availableSkills {
-    if (_selectedDepartment == null) return [];
-    return _departmentSkills[_selectedDepartment] ?? [];
+  Future<void> _fetchSkills() async {
+    if (_selectedDepartment == null) return;
+    try {
+      final repo = ref.read(jobRequisitionRepositoryProvider);
+      final skills = await repo.getDepartmentSkills(_selectedDepartment!);
+      setState(() {
+        _availableSkills = skills;
+      });
+    } catch (e) {
+      debugPrint('Error fetching skills: $e');
+    }
   }
 
   @override
@@ -126,6 +77,11 @@ class _CreateJobRequisitionScreenState
     }
 
     _selectedSkills = widget.requisition?.requiredSkills ?? [];
+
+    // Fetch skills for initial department if editing
+    if (_selectedDepartment != null) {
+      _fetchSkills();
+    }
   }
 
   @override
@@ -260,6 +216,15 @@ class _CreateJobRequisitionScreenState
     }
 
     final List<String> tempSelected = List.from(_selectedSkills);
+    final TextEditingController customSkillController = TextEditingController();
+    final List<String> dialogSkills = List.from(_availableSkills);
+
+    // Add already selected skills that are not in the department list (custom skills)
+    for (var skill in tempSelected) {
+      if (!dialogSkills.contains(skill)) {
+        dialogSkills.add(skill);
+      }
+    }
 
     await showDialog(
       context: context,
@@ -268,23 +233,76 @@ class _CreateJobRequisitionScreenState
           title: const Text('Select Skills'),
           content: SizedBox(
             width: double.maxFinite,
-            child: ListView(
-              shrinkWrap: true,
-              children: _availableSkills.map((skill) {
-                return CheckboxListTile(
-                  title: Text(skill),
-                  value: tempSelected.contains(skill),
-                  onChanged: (bool? checked) {
-                    setDialogState(() {
-                      if (checked == true) {
-                        tempSelected.add(skill);
-                      } else {
-                        tempSelected.remove(skill);
-                      }
-                    });
-                  },
-                );
-              }).toList(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: customSkillController,
+                        decoration: const InputDecoration(
+                          hintText: 'Add custom skill',
+                          isDense: true,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add_circle,
+                          color: AppTheme.primaryColor),
+                      onPressed: () async {
+                        final skill = customSkillController.text.trim();
+                        if (skill.isNotEmpty) {
+                          // Persist new skill
+                          try {
+                            final repo =
+                                ref.read(jobRequisitionRepositoryProvider);
+                            await repo.addDepartmentSkill(
+                                _selectedDepartment!, skill);
+                          } catch (e) {
+                            debugPrint('Error adding skill: $e');
+                          }
+
+                          setDialogState(() {
+                            if (!dialogSkills.contains(skill)) {
+                              dialogSkills.add(skill);
+                            }
+                            if (!tempSelected.contains(skill)) {
+                              tempSelected.add(skill);
+                            }
+                            // Also update the local available skills list
+                            if (!_availableSkills.contains(skill)) {
+                              _availableSkills.add(skill);
+                            }
+                            customSkillController.clear();
+                          });
+                        }
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Flexible(
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: dialogSkills.map((skill) {
+                      return CheckboxListTile(
+                        title: Text(skill),
+                        value: tempSelected.contains(skill),
+                        onChanged: (bool? checked) {
+                          setDialogState(() {
+                            if (checked == true) {
+                              tempSelected.add(skill);
+                            } else {
+                              tempSelected.remove(skill);
+                            }
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
             ),
           ),
           actions: [
@@ -322,20 +340,6 @@ class _CreateJobRequisitionScreenState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Job Title',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a job title';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 initialValue: _selectedDepartment,
                 decoration: const InputDecoration(
@@ -354,10 +358,25 @@ class _CreateJobRequisitionScreenState
                     // Clear skills when department changes
                     _selectedSkills = [];
                   });
+                  _fetchSkills();
                 },
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please select a department';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Job Title',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter a job title';
                   }
                   return null;
                 },

@@ -66,6 +66,12 @@ final jobRequisitionsProvider =
       status: filter.status, search: filter.search);
 });
 
+final departmentSkillsProvider =
+    FutureProvider.family<List<String>, String>((ref, department) async {
+  final repository = ref.watch(jobRequisitionRepositoryProvider);
+  return repository.getDepartmentSkills(department);
+});
+
 final jobRequisitionDetailProvider =
     FutureProvider.family<JobRequisition, String>((ref, id) async {
   final repository = ref.watch(jobRequisitionRepositoryProvider);

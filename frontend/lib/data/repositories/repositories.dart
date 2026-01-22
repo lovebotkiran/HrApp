@@ -2,6 +2,7 @@ import '../datasources/api_client.dart';
 import '../models/job_requisition.dart';
 import '../models/candidate.dart';
 import '../models/interview.dart';
+import '../models/department_skill.dart';
 import 'package:agentichr_frontend/data/models/offer.dart';
 import 'package:dio/dio.dart';
 import '../../core/services/token_storage.dart';
@@ -37,6 +38,17 @@ class JobRequisitionRepository {
   Future<void> shareOnLinkedIn(String id) => _apiClient.shareToLinkedIn(id);
 
   Future<void> deleteRequisition(String id) => _apiClient.deleteRequisition(id);
+
+  Future<List<String>> getDepartmentSkills(String department) async {
+    final response = await _apiClient.getDepartmentSkills(department);
+    return response.map((DepartmentSkill e) => e.skillName).toList();
+  }
+
+  Future<void> addDepartmentSkill(String department, String skillName) =>
+      _apiClient.addDepartmentSkill({
+        'department': department,
+        'skill_name': skillName,
+      });
 }
 
 class AuthRepository {
@@ -173,6 +185,13 @@ class JobPostingRepository {
   Future<Map<String, dynamic>> publishJobPosting(
       String id, Map<String, dynamic> platforms) async {
     final response = await _apiClient.publishJobPosting(id, platforms);
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> updateJobPostingStatus(
+      String id, String status) async {
+    final response =
+        await _apiClient.updateJobPostingStatus(id, {'status': status});
     return response.data as Map<String, dynamic>;
   }
 }

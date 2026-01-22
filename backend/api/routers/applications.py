@@ -44,6 +44,14 @@ async def submit_application(
             detail="Job posting not found or inactive"
         )
     
+    # Check if expired
+    now = datetime.utcnow()
+    if (job_posting.expires_at and job_posting.expires_at < now) or job_posting.status_state == 'Expired':
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot apply to an expired job posting"
+        )
+    
     # Create or get candidate
     candidate = db.query(Candidate).filter(
         Candidate.email == application_data.candidate_data.email

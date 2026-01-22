@@ -35,6 +35,8 @@ class _JobPostingsListScreenState extends ConsumerState<JobPostingsListScreen> {
               const PopupMenuItem(value: 'Active', child: Text('Active')),
               const PopupMenuItem(value: 'Expired', child: Text('Expired')),
               const PopupMenuItem(value: 'Draft', child: Text('Draft')),
+              const PopupMenuItem(value: 'Cancelled', child: Text('Cancelled')),
+              const PopupMenuItem(value: 'Rejected', child: Text('Rejected')),
             ],
           ),
         ],
@@ -71,6 +73,7 @@ class _JobPostingsListScreenState extends ConsumerState<JobPostingsListScreen> {
             itemBuilder: (context, index) {
               final posting = postings[index];
               final applicationsCount = posting['applications_count'] ?? 0;
+              final currentStatus = posting['status'] ?? 'Unknown';
 
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
@@ -81,7 +84,10 @@ class _JobPostingsListScreenState extends ConsumerState<JobPostingsListScreen> {
                       contentPadding: const EdgeInsets.all(16),
                       title: Text(
                         posting['title'] ?? 'Untitled',
-                        style: Theme.of(context).textTheme.titleMedium,
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                       ),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,44 +110,88 @@ class _JobPostingsListScreenState extends ConsumerState<JobPostingsListScreen> {
                           ),
                         ],
                       ),
-                      trailing: Chip(
-                        label: Text(posting['status'] ?? 'Unknown'),
-                        backgroundColor: _getStatusColor(posting['status']),
-                      ),
-                    ),
-                    // Action Buttons
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      child: Row(
+                      trailing: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          if (applicationsCount > 0)
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          RankedCandidatesScreen(
-                                        jobPostingId: posting['id'] ?? '',
-                                        jobTitle:
-                                            posting['title'] ?? 'Job Posting',
-                                      ),
-                                    ),
-                                  );
-                                },
-                                icon: const Icon(Icons.analytics),
-                                label: Text('Rank ($applicationsCount)'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppTheme.primaryColor,
-                                  foregroundColor: Colors.white,
+                          InkWell(
+                            onTap: () => _showStatusActions(posting),
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: _getStatusColor(currentStatus),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: _getStatusColor(currentStatus)
+                                      .withOpacity(0.5),
+                                ),
+                              ),
+                              child: Text(
+                                currentStatus,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    // Action Buttons & Status Selector
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                      child: Row(
+                        children: [
+                          if (applicationsCount > 0)
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        RankedCandidatesScreen(
+                                      jobPostingId: posting['id'] ?? '',
+                                      jobTitle:
+                                          posting['title'] ?? 'Job Posting',
+                                    ),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.analytics, size: 18),
+                              label: Text('Rank ($applicationsCount)'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.primaryColor,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 8, horizontal: 16),
+                              ),
+                            ),
                           if (applicationsCount == 0)
-                            // Placeholder or empty if no actions
-                            const Text('No candidates yet',
-                                style: TextStyle(color: Colors.grey))
+                            Text('No candidates yet',
+                                style: TextStyle(
+                                  color: AppTheme.textSecondary,
+                                  fontSize: 14,
+                                )),
+                          const SizedBox(width: 12),
+                          OutlinedButton.icon(
+                            onPressed: currentStatus == 'Expired'
+                                ? null
+                                : () {
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/apply/${posting['id']}',
+                                    );
+                                  },
+                            icon: const Icon(Icons.open_in_new, size: 18),
+                            label: const Text('Apply'),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 8, horizontal: 16),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -193,8 +243,75 @@ class _JobPostingsListScreenState extends ConsumerState<JobPostingsListScreen> {
         return AppTheme.errorColor.withOpacity(0.2);
       case 'Draft':
         return AppTheme.textSecondary.withOpacity(0.2);
+      case 'Cancelled':
+        return Colors.orange.withOpacity(0.2);
+      case 'Rejected':
+        return AppTheme.errorColor.withOpacity(0.2);
       default:
         return AppTheme.primaryColor.withOpacity(0.2);
+    }
+  }
+
+  void _showStatusActions(Map<String, dynamic> posting) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Update Status: ${posting['title']}'),
+        content: const Text('Change the current status of this job posting.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _updatePostingStatus(posting['id'], 'Expired');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.errorColor,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Expired'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _updatePostingStatus(posting['id'], 'Active');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.successColor,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Move to Active'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _updatePostingStatus(String id, String status) async {
+    try {
+      final repo = ref.read(jobPostingRepositoryProvider);
+      await repo.updateJobPostingStatus(id, status);
+      if (mounted) {
+        final _ = ref.refresh(jobPostingsProvider(_selectedStatus));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Status updated to $status'),
+            backgroundColor: AppTheme.successColor,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating status: $e'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
     }
   }
 }

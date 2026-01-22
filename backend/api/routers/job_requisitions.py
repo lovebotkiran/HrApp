@@ -5,7 +5,9 @@ from datetime import datetime
 import uuid
 
 from infrastructure.database.connection import get_db
-from infrastructure.database.models import User, JobRequisition, JobRequisitionApproval
+from infrastructure.database.models import (
+    User, JobRequisition, JobRequisitionApproval, DepartmentSkill
+)
 from infrastructure.security.auth import get_current_user
 from application.schemas import (
     JobRequisitionCreate,
@@ -13,7 +15,9 @@ from application.schemas import (
     JobRequisitionResponse,
     JobRequisitionApprovalRequest,
     MessageResponse,
-    PaginatedResponse
+    PaginatedResponse,
+    DepartmentSkillCreate,
+    DepartmentSkillResponse
 )
 from core.config import settings
 from application.services.ai_service import AIService
@@ -499,3 +503,42 @@ async def share_requisition_linkedin(
         "message": "Successfully shared to LinkedIn",
         "success": True
     }
+
+
+@router.get("/skills/{department}", response_model=List[DepartmentSkillResponse])
+async def get_department_skills(
+    department: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Get all skills for a specific department.
+    """
+    skills = db.query(DepartmentSkill).filter(
+        DepartmentSkill.department == department
+    ).all()
+    return skills
+
+
+@router.post("/skills", response_model=DepartmentSkillResponse)
+async def add_department_skill(
+    skill_data: DepartmentSkillCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Add a new skill to a department.
+    """
+    # Check for duplicate
+    existing = db.query(DepartmentSkill).filter(
+        DepartmentSkill.department == skill_data.department,
+        DepartmentSkill.skill_name == skill_data.skill_name
+    ).first()
+    
+    if existing:
+        return existing
+        
+    new_skill = DepartmentSkill(**skill_data.dict())
+    db.add(new_skill)
+    db.commit()
+    db.refresh(new_skill)
+    return new_skill

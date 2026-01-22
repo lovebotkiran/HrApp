@@ -389,3 +389,24 @@ class PaginatedResponse(BaseModel):
 class MessageResponse(BaseModel):
     message: str
     success: bool = True
+
+
+# ============================================
+# SKILL SCHEMAS
+# ============================================
+
+class DepartmentSkillBase(BaseModel):
+    department: str
+    skill_name: str
+
+
+class DepartmentSkillCreate(DepartmentSkillBase):
+    pass
+
+
+class DepartmentSkillResponse(DepartmentSkillBase):
+    id: UUID
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True

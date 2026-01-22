@@ -81,23 +81,37 @@ async def list_job_postings(
     # Apply filters
     if status:
         if status == 'Expired':
-            query = query.filter(JobPosting.expires_at < now)
+            # Show if expires_at in past OR status_state is Expired
+            query = query.filter(
+                (JobPosting.expires_at < now) | (JobPosting.status_state == 'Expired')
+            )
         elif status == 'Draft':
+            # Draft: Not active and not expired/terminal
             query = query.filter(JobPosting.is_active == False)
-            # Drafts that are also expired should technically show in expired, so exclude expired here?
-            # User said: "expired only showing in the expired section"
             query = query.filter(
                 (JobPosting.expires_at.is_(None)) | (JobPosting.expires_at > now)
             )
+            query = query.filter(
+                (JobPosting.status_state.is_(None)) | (JobPosting.status_state.notin_(['Cancelled', 'Rejected', 'Expired']))
+            )
         elif status == 'Active':
+            # Active: Is active and not expired/terminal
             query = query.filter(JobPosting.is_active == True)
             query = query.filter(
                 (JobPosting.expires_at.is_(None)) | (JobPosting.expires_at > now)
             )
+            query = query.filter(
+                (JobPosting.status_state.is_(None)) | (JobPosting.status_state.notin_(['Cancelled', 'Rejected', 'Expired']))
+            )
+        elif status in ['Cancelled', 'Rejected']:
+            query = query.filter(JobPosting.status_state == status)
     else:
-        # Default 'All' view: Exclude expired
+        # Default 'All' view: Exclude expired and cancelled/rejected unless explicitly asked
         query = query.filter(
             (JobPosting.expires_at.is_(None)) | (JobPosting.expires_at > now)
+        )
+        query = query.filter(
+            (JobPosting.status_state.is_(None)) | (JobPosting.status_state.notin_(['Cancelled', 'Rejected', 'Expired']))
         )
         
     if is_active is not None:
@@ -109,6 +123,46 @@ async def list_job_postings(
     
     postings = query.order_by(JobPosting.created_at.desc()).offset(skip).limit(limit).all()
     return postings
+
+
+@router.put("/{posting_id}/status", response_model=JobPostingResponse)
+async def update_job_posting_status(
+    posting_id: str,
+    status_update: dict,  # {"status": "Active" | "Draft" | "Cancelled" | "Rejected"}
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Update job posting status explicitly.
+    """
+    posting = db.query(JobPosting).filter(JobPosting.id == posting_id).first()
+    
+    if not posting:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job posting not found"
+        )
+    
+    new_status = status_update.get("status")
+    if new_status not in ["Active", "Draft", "Cancelled", "Rejected", "Expired"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid status. Must be one of Active, Draft, Cancelled, Rejected, Expired."
+        )
+    
+    posting.status_state = new_status
+    
+    if new_status == "Active":
+        posting.is_active = True
+        if not posting.published_at:
+            posting.published_at = datetime.utcnow()
+    elif new_status in ["Draft", "Cancelled", "Rejected", "Expired"]:
+        posting.is_active = False
+        
+    db.commit()
+    db.refresh(posting)
+    
+    return posting
 
 
 @router.get("/{posting_id}", response_model=JobPostingResponse)
@@ -215,6 +269,7 @@ async def publish_job_posting(
         posting.published_at = datetime.utcnow()
     
     posting.is_active = True
+    posting.status_state = "Active"
     
     success_count = 0 
 
@@ -288,6 +343,7 @@ async def expire_job_posting(
     
     posting.expires_at = datetime.utcnow()
     posting.is_active = False
+    posting.status_state = "Expired"
     db.commit()
     
     return {

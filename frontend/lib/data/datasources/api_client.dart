@@ -6,6 +6,7 @@ import '../models/job_requisition.dart';
 import '../models/candidate.dart';
 import '../models/interview.dart';
 import '../models/offer.dart';
+import '../models/department_skill.dart';
 import '../../core/services/token_storage.dart';
 import '../../main.dart';
 
@@ -168,6 +169,16 @@ abstract class ApiClient {
   @POST('/job-requisitions/{id}/share-linkedin')
   Future<HttpResponse<dynamic>> shareToLinkedIn(@Path('id') String id);
 
+  @GET('/job-requisitions/skills/{department}')
+  Future<List<DepartmentSkill>> getDepartmentSkills(
+    @Path('department') String department,
+  );
+
+  @POST('/job-requisitions/skills')
+  Future<DepartmentSkill> addDepartmentSkill(
+    @Body() Map<String, dynamic> data,
+  );
+
   // ============================================================================
   // Job Postings Endpoints - Using HttpResponse for dynamic data
   // ============================================================================
@@ -204,6 +215,12 @@ abstract class ApiClient {
 
   @POST('/job-postings/{id}/expire')
   Future<HttpResponse<dynamic>> expireJobPosting(@Path('id') String id);
+
+  @PUT('/job-postings/{id}/status')
+  Future<HttpResponse<dynamic>> updateJobPostingStatus(
+    @Path('id') String id,
+    @Body() Map<String, dynamic> status,
+  );
 
   // ============================================================================
   // Candidates Endpoints
