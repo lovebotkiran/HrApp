@@ -21,6 +21,7 @@ class _CreateJobRequisitionScreenState
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
+  late final TextEditingController _locationController;
   String? _selectedDepartment;
   String? _selectedEmploymentType;
   int? _selectedExperience;
@@ -59,6 +60,8 @@ class _CreateJobRequisitionScreenState
         TextEditingController(text: widget.requisition?.title ?? '');
     _descriptionController =
         TextEditingController(text: widget.requisition?.jobDescription ?? '');
+    _locationController =
+        TextEditingController(text: widget.requisition?.location ?? '');
 
     _selectedDepartment = widget.requisition?.department;
     if (_selectedDepartment != null &&
@@ -88,6 +91,7 @@ class _CreateJobRequisitionScreenState
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
+    _locationController.dispose();
     super.dispose();
   }
 
@@ -175,6 +179,7 @@ class _CreateJobRequisitionScreenState
           'experience_min': _selectedExperience,
           'required_skills': _selectedSkills,
           'job_description': _descriptionController.text,
+          'location': _locationController.text,
           'status': status,
         };
 
@@ -191,7 +196,7 @@ class _CreateJobRequisitionScreenState
                     'Job Requisition ${widget.requisition != null ? 'updated' : 'created'} successfully')),
           );
           Navigator.pop(context);
-          ref.refresh(jobRequisitionsProvider(JobRequisitionFilter()));
+          ref.invalidate(jobRequisitionsProvider);
         }
       } catch (e) {
         if (mounted) {
@@ -377,6 +382,21 @@ class _CreateJobRequisitionScreenState
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter a job title';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _locationController,
+                decoration: const InputDecoration(
+                  labelText: 'Location',
+                  hintText: 'e.g. Remote, Bangalore, New York',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter a location';
                   }
                   return null;
                 },

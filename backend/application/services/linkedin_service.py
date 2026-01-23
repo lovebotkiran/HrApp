@@ -1,81 +1,103 @@
 import logging
 import httpx
+import os
+import mimetypes
 from typing import Dict, Any, Optional
+from PIL import Image, ImageDraw, ImageFont
 from core.config import settings
 
 logger = logging.getLogger(__name__)
 
 class LinkedInService:
     def __init__(self):
-        self.access_token = settings.LINKEDIN_ACCESS_TOKEN if hasattr(settings, 'LINKEDIN_ACCESS_TOKEN') else ""
+        self.access_token = settings.LINKEDIN_ACCESS_TOKEN.strip() if hasattr(settings, 'LINKEDIN_ACCESS_TOKEN') else ""
         self.api_url = "https://api.linkedin.com/v2"
         self._bold_map = {
             'A': '𝗔', 'B': '𝗕', 'C': '𝗖', 'D': '𝗗', 'E': '𝗘', 'F': '𝗙', 'G': '𝗚', 'H': '𝗛', 'I': '𝗜', 'J': '𝗝', 'K': '𝗞', 'L': '𝗟', 'M': '𝗠', 'N': '𝗡', 'O': '𝗢', 'P': '𝗣', 'Q': '𝗤', 'R': '𝗥', 'S': '𝗦', 'T': '𝗧', 'U': '𝗨', 'V': '𝗩', 'W': '𝗪', 'X': '𝗫', 'Y': '𝗬', 'Z': '𝗭',
             'a': '𝗮', 'b': '𝗯', 'c': '𝗰', 'd': '𝗱', 'e': '𝗲', 'f': '𝗳', 'g': '𝗴', 'h': '𝗵', 'i': '𝗶', 'j': '𝗷', 'k': '𝗸', 'l': '𝗹', 'm': '𝗺', 'n': '𝗻', 'o': '𝗼', 'p': '𝗽', 'q': '𝗾', 'r': '𝗿', 's': '𝘀', 't': '𝘁', 'u': '𝘂', 'v': '𝘃', 'w': '𝘄', 'x': '𝘅', 'y': '𝘆', 'z': '𝘇',
             '0': '𝟬', '1': '𝟭', '2': '𝟮', '3': '𝟯', '4': '𝟰', '5': '𝟱', '6': '𝟲', '7': '𝟳', '8': '𝟴', '9': '𝟵'
         }
+        self.template_path = os.path.join(os.getcwd(), "assets", "templates", "hiring_template.png")
+        self.output_dir = os.path.join(os.getcwd(), "uploads", "generated_posts")
+        os.makedirs(self.output_dir, exist_ok=True)
+        
+        self.org_urn = settings.LINKEDIN_ORGANIZATION_URN.strip() if hasattr(settings, 'LINKEDIN_ORGANIZATION_URN') else ""
+        if "YOUR_ORG_ID_HERE" in self.org_urn:
+            self.org_urn = ""
         
         
-    async def share_job(self, title: str, description: str, apply_url: str = "", image_path: str = None) -> Dict[str, Any]:
+    async def share_job(self, title: str, description: str, apply_url: str = "", image_path: str = None, generate_image: bool = True, logo_path: str = None, highlights: list = None) -> Dict[str, Any]:
         """
         Share a job posting to LinkedIn using the modern Posts API.
         """
-        if not self.access_token:
-            logger.warning("LinkedIn access token not found.")
-            return {"success": False, "message": "LinkedIn access token not configured"}
-
-        formatted_title = self._to_bold(f"We are hiring a {title}!")
-        formatted_description = self._format_commentary(description)
-        apply_text = self._to_bold("Apply here:")
-        
-        share_text = f"{formatted_title}\n\n{formatted_description}\n\n{apply_text} {apply_url}"
-        
-        # Always get the person URN first as a reliable fallback
-        person_urn = await self._get_author_urn()
-        
-        # Try to use Organization URN if configured, otherwise fallback to Person URN
-        author_urn = settings.LINKEDIN_ORGANIZATION_URN if settings.LINKEDIN_ORGANIZATION_URN and "YOUR_ORG_ID_HERE" not in settings.LINKEDIN_ORGANIZATION_URN else None
-        
-        if not author_urn:
-            author_urn = person_urn
+        try:
+            if generate_image and not image_path:
+                image_path = await self.generate_hiring_image(title, logo_path, highlights)
             
-        if not author_urn:
-            return {"success": False, "message": "Could not determine LinkedIn author URN (Person or Organization). Ensure your access token is valid and has sufficient permissions."}
+            if not self.access_token:
+                logger.warning("LinkedIn access token not found.")
+                return {"success": False, "message": "LinkedIn access token not configured", "status_code": 401}
 
-        # Modern Posts API Payload
-        payload = {
-            "author": author_urn,
-            "commentary": share_text,
-            "visibility": "PUBLIC",
-            "distribution": {
-                "feedDistribution": "MAIN_FEED",
-                "targetEntities": [],
-                "thirdPartyDistributionChannels": []
-            },
-            "lifecycleState": "PUBLISHED",
-            "isReshareDisabledByAuthor": False
-        }
-        
-        # Add media if available
-        if image_path:
-            asset_urn = await self._upload_image(author_urn, image_path)
-            if asset_urn:
-                payload["content"] = {
-                    "media": {
-                        "title": title,
-                        "id": asset_urn
-                    }
+            formatted_title = self._to_bold(f"We are hiring a {title}!")
+            formatted_description = self._format_commentary(description)
+            apply_text = self._to_bold("Apply here:")
+            
+            # Ensure description isn't too long (LinkedIn limit is 3000 characters)
+            commentary = f"{formatted_title}\n\n{formatted_description}\n\n{apply_text} {apply_url}"
+            if len(commentary) > 2900:
+                logger.warning(f"Commentary too long ({len(commentary)} chars). Truncating.")
+                formatted_description = formatted_description[:2000] + "..."
+                commentary = f"{formatted_title}\n\n{formatted_description}\n\n{apply_text} {apply_url}"
+
+            # Always get the person URN first as a reliable fallback
+            person_urn = await self._get_author_urn()
+            
+            # Use Organization URN if configured, otherwise fallback to Person URN
+            author_urn = self.org_urn if self.org_urn else person_urn
+            
+            if not author_urn:
+                return {
+                    "success": False, 
+                    "message": "Could not determine LinkedIn author URN. Ensure your access token is valid and has sufficient permissions (openid, profile, w_member_social).",
+                    "status_code": 401
                 }
 
-        try:
+            # Modern Posts API Payload
+            payload = {
+                "author": author_urn,
+                "commentary": commentary,
+                "visibility": "PUBLIC",
+                "distribution": {
+                    "feedDistribution": "MAIN_FEED",
+                    "targetEntities": [],
+                    "thirdPartyDistributionChannels": []
+                },
+                "lifecycleState": "PUBLISHED",
+                "isReshareDisabledByAuthor": False
+            }
+            
+            # Add media if available (registered with author_urn as owner)
+            if image_path:
+                asset_urn = await self._upload_image(author_urn, image_path)
+                if asset_urn:
+                    payload["content"] = {
+                        "media": {
+                            "title": title,
+                            "id": asset_urn
+                        }
+                    }
+
             async with httpx.AsyncClient() as client:
+                headers = {
+                    "Authorization": f"Bearer {self.access_token}",
+                    "X-Restli-Protocol-Version": "2.0.0",
+                    "LinkedIn-Version": "202410" 
+                }
+                
+                logger.info(f"Sharing to LinkedIn as {author_urn}")
                 response = await client.post(
                     "https://api.linkedin.com/v2/posts",
-                    headers={
-                        "Authorization": f"Bearer {self.access_token}",
-                        "X-Restli-Protocol-Version": "2.0.0",
-                        "LinkedIn-Version": "202401" # Use a recent version
-                    },
+                    headers=headers,
                     json=payload
                 )
                 
@@ -86,29 +108,50 @@ class LinkedInService:
                 if response.status_code == 403 and author_urn.startswith("urn:li:organization:") and person_urn:
                     logger.warning(f"Failed to post as organization {author_urn} (403). Falling back to personal post as {person_urn}")
                     payload["author"] = person_urn
+                    
+                    # IMPORTANT: Clear media content if it was registered with the org owner.
+                    # A person cannot post an asset owned by an organization unless they share it differently.
+                    # Falling back to a text-only post is better than a total failure.
+                    if "content" in payload:
+                        del payload["content"]
+                        logger.info("Cleared media from fallback post due to ownership constraints.")
+                    
                     response = await client.post(
                         "https://api.linkedin.com/v2/posts",
-                        headers={
-                            "Authorization": f"Bearer {self.access_token}",
-                            "X-Restli-Protocol-Version": "2.0.0",
-                            "LinkedIn-Version": "202401"
-                        },
+                        headers=headers,
                         json=payload
                     )
                     if response.status_code in [201, 200]:
                         return {"success": True, "data": response.json() if response.text else {}, "message": "Posted to personal feed (organization access denied)"}
 
-                logger.error(f"LinkedIn API error {response.status_code}: {response.text}")
+                # Try to parse error body for more detail
+                error_body = None
+                try:
+                    error_body = response.json()
+                except Exception:
+                    error_body = response.text
+
+                logger.error(f"LinkedIn API error {response.status_code} for author {author_urn}: {error_body}")
+                
+                # Provide a more diagnostic message to the user
+                msg = f"LinkedIn Error {response.status_code} for author {author_urn}"
+                if isinstance(error_body, dict) and "message" in error_body:
+                    msg += f": {error_body['message']}"
+                elif isinstance(error_body, str):
+                    msg += f": {error_body}"
+
                 return {
-                    "success": False, 
-                    "message": f"LinkedIn Error: {response.status_code}", 
+                    "success": False,
+                    "message": msg,
                     "status_code": response.status_code,
-                    "detail": response.text
+                    "detail": error_body
                 }
                     
         except Exception as e:
             logger.error(f"Error sharing to LinkedIn: {e}")
-            return {"success": False, "message": str(e)}
+            import traceback
+            logger.error(traceback.format_exc())
+            return {"success": False, "message": str(e), "status_code": 500}
 
     async def _upload_image(self, author_urn: str, image_path: str) -> Optional[str]:
         """
@@ -136,12 +179,15 @@ class LinkedInService:
             }
             
             async with httpx.AsyncClient() as client:
+                headers = {
+                    "Authorization": f"Bearer {self.access_token}",
+                    "X-Restli-Protocol-Version": "2.0.0",
+                    "LinkedIn-Version": "202410" 
+                }
+                
                 reg_response = await client.post(
                     register_url,
-                    headers={
-                        "Authorization": f"Bearer {self.access_token}",
-                        "X-Restli-Protocol-Version": "2.0.0"
-                    },
+                    headers=headers,
                     json=register_payload
                 )
                 
@@ -154,22 +200,27 @@ class LinkedInService:
                 asset_urn = reg_data['value']['asset']
                 
                 # 2. Upload Binary
-                # Just reading the file as binary
                 try:
                     with open(image_path, "rb") as img_file:
                         image_data = img_file.read()
                         
+                    # Set appropriate content-type for upload
+                    content_type, _ = mimetypes.guess_type(image_path)
+                    upload_headers = {"Content-Type": content_type or "application/octet-stream"}
+
                     upload_response = await client.put(
                         upload_url,
-                        headers={
-                            "Authorization": f"Bearer {self.access_token}"
-                        },
-                        content=image_data
+                        content=image_data,
+                        headers=upload_headers
                     )
-                    
+
                     if upload_response.status_code not in [200, 201]:
                          logger.error(f"Failed to upload image binary: {upload_response.text}")
                          return None
+                    
+                    # For the Posts API, we should use urn:li:image: rather than digitalmediaAsset
+                    if asset_urn.startswith("urn:li:digitalmediaAsset:"):
+                        return asset_urn.replace("urn:li:digitalmediaAsset:", "urn:li:image:")
                          
                     return asset_urn
                     
@@ -184,39 +235,45 @@ class LinkedInService:
     async def _get_author_urn(self) -> Optional[str]:
         """
         Fetch the current user's URN (ID or Sub) to use as author.
-        Tries /me endpoint first, then /userinfo for OIDC tokens.
+        Tries /userinfo (OIDC) first as it is preferred for new tokens,
+        then falls back to legacy /me endpoint.
         """
         try:
             async with httpx.AsyncClient() as client:
-                # Try OIDC UserInfo first as it's more reliable for new tokens
-                response = await client.get(
-                    "https://api.linkedin.com/v2/userinfo",
-                    headers={"Authorization": f"Bearer {self.access_token}"}
-                )
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    # OIDC uses 'sub' as the person identifier
-                    person_id = data.get("sub")
-                    if person_id:
-                        return f"urn:li:person:{person_id}"
+                # 1. Try OIDC UserInfo first (Required for new granular scopes)
+                try:
+                    response = await client.get(
+                        "https://api.linkedin.com/v2/userinfo",
+                        headers={"Authorization": f"Bearer {self.access_token}"}
+                    )
+                    if response.status_code == 200:
+                        data = response.json()
+                        person_id = data.get("sub")
+                        if person_id:
+                            logger.info(f"Fetched member ID from /userinfo: {person_id}")
+                            return f"urn:li:person:{person_id}"
+                except Exception as e:
+                    logger.debug(f"OIDC UserInfo failed: {e}")
 
-                # Fallback to legacy /me endpoint
+                # 2. Fallback to legacy /me endpoint
+                headers = {
+                    "Authorization": f"Bearer {self.access_token}",
+                    "X-Restli-Protocol-Version": "2.0.0",
+                    "LinkedIn-Version": "202410"
+                }
+                
                 response = await client.get(
                     f"{self.api_url}/me",
-                    headers={
-                        "Authorization": f"Bearer {self.access_token}",
-                        "X-Restli-Protocol-Version": "2.0.0",
-                        "LinkedIn-Version": "202401"
-                    }
+                    headers=headers
                 )
                 if response.status_code == 200:
                     data = response.json()
                     person_id = data.get('id')
                     if person_id:
+                        logger.info(f"Fetched member ID from /me: {person_id}")
                         return f"urn:li:person:{person_id}"
                 
-                logger.error(f"Could not find person ID in LinkedIn profile. Status: {response.status_code}")
+                logger.error(f"Could not find person ID in LinkedIn profile. /me status: {response.status_code}")
                 return None
         except Exception as e:
             logger.error(f"Error fetching LinkedIn profile: {e}")
@@ -323,3 +380,73 @@ class LinkedInService:
                 formatted_lines.append(line)
                 
         return '\n'.join(formatted_lines)
+
+    async def generate_hiring_image(self, title: str, logo_path: str = None, highlights: list = None) -> Optional[str]:
+        """
+        Generates a 'We Are Hiring' image using a template and overlays the job title, logo, and AI highlights.
+        """
+        try:
+            if not os.path.exists(self.template_path):
+                logger.error(f"Template image not found at {self.template_path}")
+                return None
+
+            # Load template
+            img = Image.open(self.template_path)
+            draw = ImageDraw.Draw(img)
+            width, height = img.size
+
+            # Load fonts
+            font_path_bold = "C:\\Windows\\Fonts\\arialbd.ttf" if os.name == 'nt' else "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+            font_path_reg = "C:\\Windows\\Fonts\\arial.ttf" if os.name == 'nt' else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+            
+            if not os.path.exists(font_path_bold):
+                font_title = ImageFont.load_default()
+                font_hiring = ImageFont.load_default()
+                font_highlight = ImageFont.load_default()
+            else:
+                font_hiring = ImageFont.truetype(font_path_bold, 120)
+                font_title = ImageFont.truetype(font_path_bold, 80)
+                font_highlight = ImageFont.truetype(font_path_reg, 50)
+
+            # Draw "WE ARE HIRING"
+            hiring_text = "WE ARE HIRING"
+            hiring_bbox = draw.textbbox((0, 0), hiring_text, font=font_hiring)
+            hiring_w = hiring_bbox[2] - hiring_bbox[0]
+            
+            # Center it horizontally on the left 40%
+            x_center = int(width * 0.4 / 2)
+            draw.text((x_center - (hiring_w // 2), height * 0.15), hiring_text, font=font_hiring, fill=(255, 255, 255))
+
+            # Draw Job Title
+            title_text = title.upper()
+            title_bbox = draw.textbbox((0, 0), title_text, font=font_title)
+            title_w = title_bbox[2] - title_bbox[0]
+            draw.text((x_center - (title_w // 2), height * 0.3), title_text, font=font_title, fill=(255, 255, 255))
+
+            # Draw AI Highlights
+            if highlights:
+                y_offset = height * 0.45
+                for highlight in highlights[:4]:
+                    h_text = f"• {highlight}"
+                    draw.text((50, y_offset), h_text, font=font_highlight, fill=(255, 255, 255))
+                    y_offset += 70
+
+            # Add Logo if provided
+            if logo_path and os.path.exists(logo_path):
+                logo = Image.open(logo_path).convert("RGBA")
+                logo.thumbnail((200, 200), Image.Resampling.LANCZOS)
+                # Paste logo at bottom left
+                img.paste(logo, (50, height - 250), logo)
+
+            # Save generated image
+            filename = f"hiring_{title.replace(' ', '_').lower()}.png"
+            output_path = os.path.join(self.output_dir, filename)
+            img.save(output_path)
+            
+            return output_path
+
+        except Exception as e:
+            logger.error(f"Error generating hiring image: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return None

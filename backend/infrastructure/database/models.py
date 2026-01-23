@@ -215,6 +215,7 @@ class Candidate(Base):
     certifications = Column(ARRAY(Text))
     languages = Column(ARRAY(Text))
     is_blacklisted = Column(Boolean, default=False, index=True)
+    is_active = Column(Boolean, default=True, index=True)
     blacklist_reason = Column(Text)
     created_at = Column(TIMESTAMP, server_default=func.now())
     updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())

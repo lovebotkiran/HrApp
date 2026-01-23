@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
-import 'package:json_annotation/json_annotation.dart';
 
 import '../models/job_requisition.dart';
 import '../models/candidate.dart';
@@ -142,6 +141,9 @@ abstract class ApiClient {
     @Query('search') String? search,
   });
 
+  @GET('/job-requisitions/departments')
+  Future<List<String>> getDepartments();
+
   @GET('/job-requisitions/{id}')
   Future<JobRequisition> getRequisition(@Path('id') String id);
 
@@ -189,6 +191,7 @@ abstract class ApiClient {
     @Query('limit') int limit = 100,
     @Query('status') String? status,
     @Query('search') String? search,
+    @Query('department') String? department,
   });
 
   @GET('/job-postings/{id}')
@@ -221,6 +224,10 @@ abstract class ApiClient {
     @Path('id') String id,
     @Body() Map<String, dynamic> status,
   );
+
+  @POST('/job-postings/{id}/share-linkedin')
+  Future<HttpResponse<dynamic>> shareJobPostingToLinkedIn(
+      @Path('id') String id);
 
   // ============================================================================
   // Candidates Endpoints
@@ -274,6 +281,7 @@ abstract class ApiClient {
     @Query('limit') int limit = 100,
     @Query('status') String? status,
     @Query('job_posting_id') String? jobPostingId,
+    @Query('department') String? department,
   });
 
   @GET('/applications/{id}')
@@ -296,6 +304,7 @@ abstract class ApiClient {
   Future<HttpResponse<dynamic>> rejectApplication(
     @Path('id') String id,
     @Body() Map<String, dynamic> data,
+    @Query('remove_from_pool') bool? removeFromPool,
   );
 
   @POST('/applications/{id}/calculate-match-score')

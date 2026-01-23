@@ -63,8 +63,9 @@ class Application {
 class ApplicationFilter {
   final String? status;
   final String? jobPostingId;
+  final String? department;
 
-  ApplicationFilter({this.status, this.jobPostingId});
+  ApplicationFilter({this.status, this.jobPostingId, this.department});
 
   @override
   bool operator ==(Object other) =>
@@ -72,8 +73,10 @@ class ApplicationFilter {
       other is ApplicationFilter &&
           runtimeType == other.runtimeType &&
           status == other.status &&
-          jobPostingId == other.jobPostingId;
+          jobPostingId == other.jobPostingId &&
+          department == other.department;
 
   @override
-  int get hashCode => status.hashCode ^ jobPostingId.hashCode;
+  int get hashCode =>
+      status.hashCode ^ jobPostingId.hashCode ^ department.hashCode;
 }

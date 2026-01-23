@@ -17,9 +17,14 @@ class JobRequisitionRepository {
     int limit = 100,
     String? status,
     String? search,
+    String? department,
   }) =>
       _apiClient.getRequisitions(
-          skip: skip, limit: limit, status: status, search: search);
+          skip: skip,
+          limit: limit,
+          status: status,
+          search: search,
+          department: department);
 
   Future<JobRequisition> createRequisition(Map<String, dynamic> data) =>
       _apiClient.createRequisition(data);
@@ -38,6 +43,8 @@ class JobRequisitionRepository {
   Future<void> shareOnLinkedIn(String id) => _apiClient.shareToLinkedIn(id);
 
   Future<void> deleteRequisition(String id) => _apiClient.deleteRequisition(id);
+
+  Future<List<String>> getDepartments() => _apiClient.getDepartments();
 
   Future<List<String>> getDepartmentSkills(String department) async {
     final response = await _apiClient.getDepartmentSkills(department);
@@ -157,9 +164,14 @@ class JobPostingRepository {
     int limit = 100,
     String? status,
     String? search,
+    String? department,
   }) async {
     final response = await _apiClient.getJobPostings(
-        skip: skip, limit: limit, status: status, search: search);
+        skip: skip,
+        limit: limit,
+        status: status,
+        search: search,
+        department: department);
     return List<Map<String, dynamic>>.from(response.data as List);
   }
 
@@ -194,6 +206,9 @@ class JobPostingRepository {
         await _apiClient.updateJobPostingStatus(id, {'status': status});
     return response.data as Map<String, dynamic>;
   }
+
+  Future<void> shareJobPostingOnLinkedIn(String id) =>
+      _apiClient.shareJobPostingToLinkedIn(id);
 }
 
 class ApplicationRepository {
@@ -206,9 +221,14 @@ class ApplicationRepository {
     int limit = 100,
     String? status,
     String? jobPostingId,
+    String? department,
   }) async {
     final response = await _apiClient.getApplications(
-        skip: skip, limit: limit, status: status, jobPostingId: jobPostingId);
+        skip: skip,
+        limit: limit,
+        status: status,
+        jobPostingId: jobPostingId,
+        department: department);
     return List<Map<String, dynamic>>.from(response.data as List);
   }
 
@@ -234,9 +254,10 @@ class ApplicationRepository {
     return response.data as Map<String, dynamic>;
   }
 
-  Future<Map<String, dynamic>> rejectApplication(
-      String id, Map<String, dynamic> data) async {
-    final response = await _apiClient.rejectApplication(id, data);
+  Future<Map<String, dynamic>> rejectApplication(String id,
+      {String? reason, bool removeFromPool = false}) async {
+    final response = await _apiClient.rejectApplication(
+        id, {'reason': reason}, removeFromPool);
     return response.data as Map<String, dynamic>;
   }
 

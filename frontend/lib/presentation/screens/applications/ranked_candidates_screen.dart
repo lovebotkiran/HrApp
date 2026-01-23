@@ -15,10 +15,12 @@ class RankedCandidatesScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<RankedCandidatesScreen> createState() => _RankedCandidatesScreenState();
+  ConsumerState<RankedCandidatesScreen> createState() =>
+      _RankedCandidatesScreenState();
 }
 
-class _RankedCandidatesScreenState extends ConsumerState<RankedCandidatesScreen> {
+class _RankedCandidatesScreenState
+    extends ConsumerState<RankedCandidatesScreen> {
   bool _isRanking = false;
   List<Map<String, dynamic>> _rankedApplications = [];
   bool _hasRanked = false;
@@ -39,7 +41,20 @@ class _RankedCandidatesScreenState extends ConsumerState<RankedCandidatesScreen>
 
       if (response.statusCode == 200 && response.data is List) {
         setState(() {
-          _rankedApplications = List<Map<String, dynamic>>.from(response.data);
+          final allApps = List<Map<String, dynamic>>.from(response.data);
+          // Show only candidates available for "picking" (exclude advanced statuses)
+          final advancedStatuses = [
+            'shortlisted',
+            'interview',
+            'selected',
+            'offered',
+            'rejected'
+          ];
+          _rankedApplications = allApps.where((app) {
+            final status = (app['status'] as String? ?? '').toLowerCase();
+            return !advancedStatuses.contains(status);
+          }).toList();
+
           // Sort by AI match score descending
           _rankedApplications.sort((a, b) {
             final scoreA = _parseScore(a['ai_match_score']);
@@ -68,11 +83,12 @@ class _RankedCandidatesScreenState extends ConsumerState<RankedCandidatesScreen>
 
       if (response.statusCode == 200) {
         setState(() => _hasRanked = true);
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(response.data['message'] ?? 'Candidates ranked successfully'),
+              content: Text(
+                  response.data['message'] ?? 'Candidates ranked successfully'),
               backgroundColor: AppTheme.successColor,
             ),
           );
@@ -87,7 +103,7 @@ class _RankedCandidatesScreenState extends ConsumerState<RankedCandidatesScreen>
         if (e.response?.data != null && e.response!.data['detail'] != null) {
           errorMessage = e.response!.data['detail'];
         }
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errorMessage),
@@ -145,7 +161,8 @@ class _RankedCandidatesScreenState extends ConsumerState<RankedCandidatesScreen>
             decoration: BoxDecoration(
               color: AppTheme.primaryColor.withOpacity(0.1),
               border: Border(
-                bottom: BorderSide(color: AppTheme.primaryColor.withOpacity(0.2)),
+                bottom:
+                    BorderSide(color: AppTheme.primaryColor.withOpacity(0.2)),
               ),
             ),
             child: Column(
@@ -158,9 +175,10 @@ class _RankedCandidatesScreenState extends ConsumerState<RankedCandidatesScreen>
                     Expanded(
                       child: Text(
                         'AI-Powered Candidate Ranking',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                       ),
                     ),
                   ],
@@ -179,14 +197,17 @@ class _RankedCandidatesScreenState extends ConsumerState<RankedCandidatesScreen>
                       ? const SizedBox(
                           width: 16,
                           height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
                         )
                       : const Icon(Icons.analytics),
-                  label: Text(_isRanking ? 'Ranking...' : 'Rank All Candidates'),
+                  label:
+                      Text(_isRanking ? 'Ranking...' : 'Rank All Candidates'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryColor,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
                   ),
                 ),
               ],
@@ -200,7 +221,8 @@ class _RankedCandidatesScreenState extends ConsumerState<RankedCandidatesScreen>
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.people_outline, size: 64, color: AppTheme.textSecondary),
+                        Icon(Icons.people_outline,
+                            size: 64, color: AppTheme.textSecondary),
                         const SizedBox(height: 16),
                         Text(
                           'No applications found',
@@ -209,9 +231,10 @@ class _RankedCandidatesScreenState extends ConsumerState<RankedCandidatesScreen>
                         const SizedBox(height: 8),
                         Text(
                           'Applications will appear here',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: AppTheme.textSecondary,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: AppTheme.textSecondary,
+                                  ),
                         ),
                       ],
                     ),
@@ -234,7 +257,8 @@ class _RankedCandidatesScreenState extends ConsumerState<RankedCandidatesScreen>
                           leading: Stack(
                             children: [
                               CircleAvatar(
-                                backgroundColor: _getScoreColor(matchScore.toDouble()),
+                                backgroundColor:
+                                    _getScoreColor(matchScore.toDouble()),
                                 child: Text(
                                   '${index + 1}',
                                   style: const TextStyle(
@@ -253,15 +277,21 @@ class _RankedCandidatesScreenState extends ConsumerState<RankedCandidatesScreen>
                                       color: Colors.amber,
                                       shape: BoxShape.circle,
                                     ),
-                                    child: const Icon(Icons.star, size: 12, color: Colors.white),
+                                    child: const Icon(Icons.star,
+                                        size: 12, color: Colors.white),
                                   ),
                                 ),
                             ],
                           ),
                           title: Text(
                             app['candidate_name'] ?? 'Candidate #$candidateId',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: matchScore > 75 ? FontWeight.bold : FontWeight.normal,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  fontWeight: matchScore > 75
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
                                 ),
                           ),
                           subtitle: Column(
@@ -270,12 +300,16 @@ class _RankedCandidatesScreenState extends ConsumerState<RankedCandidatesScreen>
                               const SizedBox(height: 8),
                               Row(
                                 children: [
-                                  Icon(Icons.analytics, size: 16, color: _getScoreColor(matchScore.toDouble())),
+                                  Icon(Icons.analytics,
+                                      size: 16,
+                                      color: _getScoreColor(
+                                          matchScore.toDouble())),
                                   const SizedBox(width: 4),
                                   Text(
                                     'Match Score: ${matchScore.toStringAsFixed(1)}%',
                                     style: TextStyle(
-                                      color: _getScoreColor(matchScore.toDouble()),
+                                      color:
+                                          _getScoreColor(matchScore.toDouble()),
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -284,7 +318,8 @@ class _RankedCandidatesScreenState extends ConsumerState<RankedCandidatesScreen>
                               const SizedBox(height: 4),
                               Row(
                                 children: [
-                                  Icon(Icons.info_outline, size: 16, color: AppTheme.textSecondary),
+                                  Icon(Icons.info_outline,
+                                      size: 16, color: AppTheme.textSecondary),
                                   const SizedBox(width: 4),
                                   Text('Status: ${status ?? "Unknown"}'),
                                 ],
@@ -300,14 +335,19 @@ class _RankedCandidatesScreenState extends ConsumerState<RankedCandidatesScreen>
                                   children: [
                                     Text(
                                       'AI Analysis:',
-                                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleSmall
+                                          ?.copyWith(
                                             fontWeight: FontWeight.bold,
                                           ),
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
                                       reasoning,
-                                      style: Theme.of(context).textTheme.bodyMedium,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium,
                                     ),
                                     const SizedBox(height: 16),
                                     Row(
@@ -326,13 +366,25 @@ class _RankedCandidatesScreenState extends ConsumerState<RankedCandidatesScreen>
                                         ),
                                         const SizedBox(width: 8),
                                         ElevatedButton.icon(
-                                          onPressed: () {
-                                            // TODO: Shortlist candidate
-                                          },
+                                          onPressed: () =>
+                                              _rejectCandidate(app),
+                                          icon: const Icon(Icons.cancel),
+                                          label: const Text('Reject'),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor:
+                                                AppTheme.errorColor,
+                                            foregroundColor: Colors.white,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        ElevatedButton.icon(
+                                          onPressed: () =>
+                                              _shortlistCandidate(app),
                                           icon: const Icon(Icons.check_circle),
                                           label: const Text('Shortlist'),
                                           style: ElevatedButton.styleFrom(
-                                            backgroundColor: AppTheme.successColor,
+                                            backgroundColor:
+                                                AppTheme.successColor,
                                             foregroundColor: Colors.white,
                                           ),
                                         ),
@@ -350,6 +402,138 @@ class _RankedCandidatesScreenState extends ConsumerState<RankedCandidatesScreen>
         ],
       ),
     );
+  }
+
+  Future<void> _shortlistCandidate(Map<String, dynamic> app) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Shortlist Candidate'),
+        content: Text(
+            'Move ${app['candidate_name']} to the shortlisted stage for this position?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.successColor,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Shortlist'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        final repo = ref.read(applicationRepositoryProvider);
+        await repo.shortlistApplication(app['id'] as String);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Candidate shortlisted successfully'),
+              backgroundColor: AppTheme.successColor,
+            ),
+          );
+          // Reload applications - this will automatically hide the candidate
+          // because of the new advanced status filtering.
+          _loadApplications();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: $e'),
+              backgroundColor: AppTheme.errorColor,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _rejectCandidate(Map<String, dynamic> app) async {
+    bool removeFromPool = false;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(builder: (context, setDialogState) {
+        return AlertDialog(
+          title: const Text('Reject Candidate'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                  'Are you sure you want to reject ${app['candidate_name']} for this position?'),
+              const SizedBox(height: 16),
+              CheckboxListTile(
+                title: const Text('Remove from local candidate pool?'),
+                subtitle: const Text(
+                    'This candidate will not be suggested for future job postings.'),
+                value: removeFromPool,
+                onChanged: (value) {
+                  setDialogState(() {
+                    removeFromPool = value ?? false;
+                  });
+                },
+                activeColor: AppTheme.errorColor,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.errorColor,
+                  foregroundColor: Colors.white),
+              child: const Text('Confirm Rejection'),
+            ),
+          ],
+        );
+      }),
+    );
+
+    if (result == true) {
+      try {
+        final repo = ref.read(applicationRepositoryProvider);
+        await repo.rejectApplication(
+          app['id'] as String,
+          reason: 'Rejected from Ranked Candidates screen',
+          removeFromPool: removeFromPool,
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(removeFromPool
+                  ? 'Candidate rejected and removed from pool'
+                  : 'Candidate rejected'),
+              backgroundColor: AppTheme.successColor,
+            ),
+          );
+          // Reload applications
+          _loadApplications();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text('Error: $e'),
+                backgroundColor: AppTheme.errorColor),
+          );
+        }
+      }
+    }
   }
 
   Color _getScoreColor(double score) {

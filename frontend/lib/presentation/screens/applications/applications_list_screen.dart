@@ -15,140 +15,168 @@ class ApplicationsListScreen extends ConsumerStatefulWidget {
 class _ApplicationsListScreenState
     extends ConsumerState<ApplicationsListScreen> {
   String? _selectedStatus;
+  String? _selectedDepartment;
 
   @override
   Widget build(BuildContext context) {
-    final applicationsAsync = ref.watch(
-        applicationsProvider(ApplicationFilter(status: _selectedStatus)));
+    final applicationsAsync = ref.watch(applicationsProvider(ApplicationFilter(
+        status: _selectedStatus, department: _selectedDepartment)));
+    final departmentsAsync = ref.watch(departmentsProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Applications'),
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.filter_list),
-            onSelected: (value) {
+    final departments = departmentsAsync.value ?? [];
+    if (_selectedDepartment == null && departments.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          _selectedDepartment = departments.first;
+        });
+      });
+    }
+
+    return DefaultTabController(
+      length: departments.length,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Applications'),
+          bottom: TabBar(
+            isScrollable: true,
+            onTap: (index) {
               setState(() {
-                _selectedStatus = value == 'All' ? null : value;
+                _selectedDepartment = departments[index];
               });
             },
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'All', child: Text('All')),
-              const PopupMenuItem(value: 'New', child: Text('New')),
-              const PopupMenuItem(value: 'Screening', child: Text('Screening')),
-              const PopupMenuItem(
-                  value: 'Shortlisted', child: Text('Shortlisted')),
-              const PopupMenuItem(value: 'Rejected', child: Text('Rejected')),
-            ],
+            tabs: departments.map((d) => Tab(text: d)).toList(),
           ),
-        ],
-      ),
-      body: applicationsAsync.when(
-        data: (applications) {
-          if (applications.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.assignment_outlined,
-                      size: 64, color: AppTheme.textSecondary),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No applications found',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Applications will appear here',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppTheme.textSecondary,
-                        ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: applications.length,
-            itemBuilder: (context, index) {
-              final app = applications[index];
-              final matchScore = app['match_score'] as double?;
-
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.all(16),
-                  leading: CircleAvatar(
-                    backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
-                    child: Text(
-                      (app['candidate_name'] ?? 'U')[0].toUpperCase(),
-                      style: const TextStyle(
-                        color: AppTheme.primaryColor,
-                        fontWeight: FontWeight.bold,
-                      ),
+          actions: [
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.filter_list),
+              tooltip: 'Filter by Status',
+              onSelected: (value) {
+                setState(() {
+                  _selectedStatus = value == 'All' ? null : value;
+                });
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(value: 'All', child: Text('All')),
+                const PopupMenuItem(value: 'New', child: Text('New')),
+                const PopupMenuItem(
+                    value: 'Screening', child: Text('Screening')),
+                const PopupMenuItem(
+                    value: 'Shortlisted', child: Text('Shortlisted')),
+                const PopupMenuItem(value: 'Rejected', child: Text('Rejected')),
+              ],
+            ),
+          ],
+        ),
+        body: applicationsAsync.when(
+          data: (applications) {
+            if (applications.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.assignment_outlined,
+                        size: 64, color: AppTheme.textSecondary),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No applications found',
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
-                  ),
-                  title: Text(
-                    app['candidate_name'] ?? 'Unknown Candidate',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 8),
-                      Text(app['job_title'] ?? 'Position not specified'),
-                      const SizedBox(height: 4),
-                      if (matchScore != null)
-                        Row(
-                          children: [
-                            Icon(Icons.analytics,
-                                size: 16, color: AppTheme.textSecondary),
-                            const SizedBox(width: 4),
-                            Text('Match: ${matchScore.toStringAsFixed(0)}%'),
-                          ],
-                        ),
-                    ],
-                  ),
-                  trailing: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Chip(
-                        label: Text(app['status'] ?? 'Unknown'),
-                        backgroundColor: _getStatusColor(app['status']),
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                      ),
-                    ],
-                  ),
-                  onTap: () {
-                    // TODO: Navigate to detail screen
-                  },
+                    const SizedBox(height: 8),
+                    Text(
+                      'Applications will appear here',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppTheme.textSecondary,
+                          ),
+                    ),
+                  ],
                 ),
               );
-            },
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.error_outline, size: 64, color: AppTheme.errorColor),
-              const SizedBox(height: 16),
-              Text(
-                'Error loading applications',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: () => ref.refresh(applicationsProvider(
-                    ApplicationFilter(status: _selectedStatus))),
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
-              ),
-            ],
+            }
+
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: applications.length,
+              itemBuilder: (context, index) {
+                final app = applications[index];
+                final matchScore = app['ai_match_score'] != null
+                    ? (app['ai_match_score'] is num
+                        ? (app['ai_match_score'] as num).toDouble()
+                        : double.tryParse(app['ai_match_score'].toString()))
+                    : null;
+
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(16),
+                    leading: CircleAvatar(
+                      backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+                      child: Text(
+                        (app['candidate_name'] ?? 'U')[0].toUpperCase(),
+                        style: const TextStyle(
+                          color: AppTheme.primaryColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    title: Text(
+                      app['candidate_name'] ?? 'Unknown Candidate',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 8),
+                        Text(app['job_title'] ?? 'Position not specified'),
+                        const SizedBox(height: 4),
+                        if (matchScore != null)
+                          Row(
+                            children: [
+                              Icon(Icons.analytics,
+                                  size: 16, color: AppTheme.textSecondary),
+                              const SizedBox(width: 4),
+                              Text('Match: ${matchScore.toStringAsFixed(0)}%'),
+                            ],
+                          ),
+                      ],
+                    ),
+                    trailing: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Chip(
+                          label: Text(app['status'] ?? 'Unknown'),
+                          backgroundColor: _getStatusColor(app['status']),
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                        ),
+                      ],
+                    ),
+                    onTap: () {
+                      // TODO: Navigate to detail screen
+                    },
+                  ),
+                );
+              },
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stack) => Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline, size: 64, color: AppTheme.errorColor),
+                const SizedBox(height: 16),
+                Text(
+                  'Error loading applications',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () => ref.invalidate(applicationsProvider),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                ),
+              ],
+            ),
           ),
         ),
       ),

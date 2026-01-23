@@ -31,7 +31,8 @@ class _OffersListScreenState extends ConsumerState<OffersListScreen> {
             itemBuilder: (context) => [
               const PopupMenuItem(value: 'All', child: Text('All')),
               const PopupMenuItem(value: 'Draft', child: Text('Draft')),
-              const PopupMenuItem(value: 'Pending Approval', child: Text('Pending Approval')),
+              const PopupMenuItem(
+                  value: 'Pending Approval', child: Text('Pending Approval')),
               const PopupMenuItem(value: 'Sent', child: Text('Sent')),
               const PopupMenuItem(value: 'Accepted', child: Text('Accepted')),
               const PopupMenuItem(value: 'Rejected', child: Text('Rejected')),
@@ -46,9 +47,11 @@ class _OffersListScreenState extends ConsumerState<OffersListScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.description_outlined, size: 64, color: AppTheme.textSecondary),
+                  Icon(Icons.description_outlined,
+                      size: 64, color: AppTheme.textSecondary),
                   const SizedBox(height: 16),
-                  Text('No offers found', style: Theme.of(context).textTheme.titleLarge),
+                  Text('No offers found',
+                      style: Theme.of(context).textTheme.titleLarge),
                 ],
               ),
             );
@@ -119,10 +122,11 @@ class _OffersListScreenState extends ConsumerState<OffersListScreen> {
             children: [
               Icon(Icons.error_outline, size: 64, color: AppTheme.errorColor),
               const SizedBox(height: 16),
-              Text('Error loading offers', style: Theme.of(context).textTheme.titleLarge),
+              Text('Error loading offers',
+                  style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 16),
               ElevatedButton.icon(
-                onPressed: () => ref.refresh(offersProvider(_selectedStatus)),
+                onPressed: () => ref.invalidate(offersProvider),
                 icon: const Icon(Icons.refresh),
                 label: const Text('Retry'),
               ),
@@ -131,8 +135,9 @@ class _OffersListScreenState extends ConsumerState<OffersListScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.pushNamed(context, '/offers/create');
+        onPressed: () async {
+          await Navigator.pushNamed(context, '/offers/create');
+          ref.invalidate(offersProvider);
         },
         icon: const Icon(Icons.add),
         label: const Text('Create Offer'),

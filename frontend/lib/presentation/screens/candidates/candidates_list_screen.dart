@@ -135,8 +135,7 @@ class _CandidatesListScreenState extends ConsumerState<CandidatesListScreen> {
                         style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
-                      onPressed: () =>
-                          ref.refresh(candidatesProvider(_searchQuery)),
+                      onPressed: () => ref.invalidate(candidatesProvider),
                       icon: const Icon(Icons.refresh),
                       label: const Text('Retry'),
                     ),
@@ -148,8 +147,9 @@ class _CandidatesListScreenState extends ConsumerState<CandidatesListScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.pushNamed(context, '/candidates/create');
+        onPressed: () async {
+          await Navigator.pushNamed(context, '/candidates/create');
+          ref.invalidate(candidatesProvider);
         },
         icon: const Icon(Icons.person_add),
         label: const Text('Add Candidate'),

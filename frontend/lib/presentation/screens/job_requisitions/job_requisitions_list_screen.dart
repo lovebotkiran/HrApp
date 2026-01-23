@@ -18,275 +18,255 @@ class JobRequisitionsListScreen extends ConsumerStatefulWidget {
 class _JobRequisitionsListScreenState
     extends ConsumerState<JobRequisitionsListScreen> {
   String? _selectedStatus;
-  String _searchQuery = '';
-  final _searchController = TextEditingController();
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
+  String? _selectedDepartment;
 
   @override
   Widget build(BuildContext context) {
     final requisitionsAsync = ref.watch(jobRequisitionsProvider(
         JobRequisitionFilter(
-            status: _selectedStatus,
-            search: _searchQuery.isEmpty ? null : _searchQuery)));
+            status: _selectedStatus, department: _selectedDepartment)));
+    final departmentsAsync = ref.watch(departmentsProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Job Requisitions'),
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.filter_list),
-            onSelected: (value) {
+    final departments = departmentsAsync.value ?? [];
+    if (_selectedDepartment == null && departments.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          _selectedDepartment = departments.first;
+        });
+      });
+    }
+
+    return DefaultTabController(
+      length: departments.length,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Job Requisitions'),
+          bottom: TabBar(
+            isScrollable: true,
+            onTap: (index) {
               setState(() {
-                _selectedStatus = value == 'All' ? null : value;
+                _selectedDepartment = departments[index];
               });
             },
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'All', child: Text('All')),
-              const PopupMenuItem(value: 'draft', child: Text('Draft')),
-              const PopupMenuItem(
-                  value: 'pending_approval', child: Text('Pending Approval')),
-              const PopupMenuItem(value: 'approved', child: Text('Approved')),
-              const PopupMenuItem(value: 'rejected', child: Text('Rejected')),
-            ],
+            tabs: departments.map((d) => Tab(text: d)).toList(),
           ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search by title, department, or ID...',
-                  prefixIcon:
-                      const Icon(Icons.search, color: AppTheme.textSecondary),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                ),
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
-                  });
-                },
-              ),
+          actions: [
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.filter_list),
+              onSelected: (value) {
+                setState(() {
+                  _selectedStatus = value == 'All' ? null : value;
+                });
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(value: 'All', child: Text('All')),
+                const PopupMenuItem(value: 'draft', child: Text('Draft')),
+                const PopupMenuItem(
+                    value: 'pending_approval', child: Text('Pending Approval')),
+                const PopupMenuItem(value: 'approved', child: Text('Approved')),
+                const PopupMenuItem(value: 'rejected', child: Text('Rejected')),
+              ],
             ),
-          ),
-          Expanded(
-            child: requisitionsAsync.when(
-              data: (requisitions) {
-                // Filter out rejected items unless explicitly selected
-                final displayRequisitions = _selectedStatus == null
-                    ? requisitions
-                        .where((r) => r.status.toLowerCase() != 'rejected')
-                        .toList()
-                    : requisitions;
+          ],
+        ),
+        body: Column(
+          children: [
+            Expanded(
+              child: requisitionsAsync.when(
+                data: (requisitions) {
+                  // Filter out rejected items unless explicitly selected
+                  final displayRequisitions = _selectedStatus == null
+                      ? requisitions
+                          .where((r) => r.status.toLowerCase() != 'rejected')
+                          .toList()
+                      : requisitions;
 
-                if (displayRequisitions.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.work_outline,
-                            size: 64, color: AppTheme.textSecondary),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No requisitions found',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Create your first job requisition',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: AppTheme.textSecondary,
-                                  ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  itemCount: displayRequisitions.length,
-                  itemBuilder: (context, index) {
-                    final req = displayRequisitions[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
+                  if (displayRequisitions.isEmpty) {
+                    return Center(
                       child: Column(
-                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          ListTile(
-                            contentPadding: const EdgeInsets.all(16),
-                            title: Text(
-                              req.title,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 8),
-                                Text(
-                                  req.department,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium
-                                      ?.copyWith(
-                                        color: AppTheme.textSecondary,
-                                      ),
+                          Icon(Icons.work_outline,
+                              size: 64, color: AppTheme.textSecondary),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No requisitions found',
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Create your first job requisition',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: AppTheme.textSecondary,
                                 ),
-                                const SizedBox(height: 4),
-                                if (req.createdAt != null)
-                                  Text(
-                                    'Created: ${_formatDate(req.createdAt!)}',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
-                                        ?.copyWith(
-                                          color: AppTheme.textSecondary
-                                              .withOpacity(0.7),
-                                        ),
-                                  ),
-                              ],
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (req.status.toLowerCase() == 'approved')
-                                  IconButton(
-                                    onPressed: () => _shareToLinkedIn(req),
-                                    icon: const Icon(Icons.send,
-                                        color: Color(0xFF0077B5)),
-                                    tooltip: 'Share to LinkedIn',
-                                  ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 8),
-                                  decoration: BoxDecoration(
-                                    color:
-                                        _getStatusBackgroundColor(req.status),
-                                    borderRadius: BorderRadius.circular(25),
-                                    border: Border.all(
-                                      color: _getStatusColor(req.status)
-                                          .withOpacity(0.5),
-                                      width: 1.2,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    _formatStatus(req.status),
-                                    style: TextStyle(
-                                      color: _getStatusColor(req.status),
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                                if (req.status.toLowerCase() == 'draft')
-                                  IconButton(
-                                    icon: const Icon(Icons.delete_outline,
-                                        color: AppTheme.errorColor),
-                                    onPressed: () => _confirmDelete(req),
-                                    tooltip: 'Delete Requisition',
-                                  ),
-                              ],
-                            ),
-                            onTap: () {
-                              final status = req.status.toLowerCase();
-                              if (status == 'draft') {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        CreateJobRequisitionScreen(
-                                            requisition: req),
-                                  ),
-                                );
-                              } else if (status == 'pending_approval') {
-                                _showApprovalDialog(req);
-                              } else {
-                                // TODO: Navigate to detail screen for non-draft items
-                              }
-                            },
                           ),
                         ],
                       ),
                     );
-                  },
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) => Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.error_outline,
-                        size: 64, color: AppTheme.errorColor),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Error loading requisitions',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      error.toString(),
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppTheme.textSecondary,
-                          ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      onPressed: () => ref.refresh(jobRequisitionsProvider(
-                          JobRequisitionFilter(
-                              status: _selectedStatus,
-                              search:
-                                  _searchQuery.isEmpty ? null : _searchQuery))),
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Retry'),
-                    ),
-                  ],
+                  }
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    itemCount: displayRequisitions.length,
+                    itemBuilder: (context, index) {
+                      final req = displayRequisitions[index];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ListTile(
+                              contentPadding: const EdgeInsets.all(16),
+                              title: Text(
+                                req.title,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    '${req.department}${req.location != null ? " • ${req.location}" : ""}',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          color: AppTheme.textSecondary,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  if (req.createdAt != null)
+                                    Text(
+                                      'Created: ${_formatDate(req.createdAt!)}',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            color: AppTheme.textSecondary
+                                                .withOpacity(0.7),
+                                          ),
+                                    ),
+                                ],
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (req.status.toLowerCase() == 'approved')
+                                    IconButton(
+                                      onPressed: () => _shareToLinkedIn(req),
+                                      icon: const Icon(Icons.send,
+                                          color: Color(0xFF0077B5)),
+                                      tooltip: 'Share to LinkedIn',
+                                    ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color:
+                                          _getStatusBackgroundColor(req.status),
+                                      borderRadius: BorderRadius.circular(25),
+                                      border: Border.all(
+                                        color: _getStatusColor(req.status)
+                                            .withOpacity(0.5),
+                                        width: 1.2,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      _formatStatus(req.status),
+                                      style: TextStyle(
+                                        color: _getStatusColor(req.status),
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                  if (req.status.toLowerCase() == 'draft')
+                                    IconButton(
+                                      icon: const Icon(Icons.delete_outline,
+                                          color: AppTheme.errorColor),
+                                      onPressed: () => _confirmDelete(req),
+                                      tooltip: 'Delete Requisition',
+                                    ),
+                                ],
+                              ),
+                              onTap: () {
+                                final status = req.status.toLowerCase();
+                                if (status == 'draft') {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          CreateJobRequisitionScreen(
+                                              requisition: req),
+                                    ),
+                                  ).then((_) =>
+                                      ref.invalidate(jobRequisitionsProvider));
+                                } else if (status == 'pending_approval') {
+                                  _showApprovalDialog(req);
+                                } else {
+                                  // TODO: Navigate to detail screen for non-draft items
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, stack) => Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.error_outline,
+                          size: 64, color: AppTheme.errorColor),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Error loading requisitions',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        error.toString(),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: AppTheme.textSecondary,
+                            ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: () => ref.refresh(jobRequisitionsProvider(
+                            JobRequisitionFilter(
+                                status: _selectedStatus,
+                                department: _selectedDepartment))),
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Retry'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.pushNamed(context, '/job-requisitions/create');
-        },
-        icon: const Icon(Icons.add),
-        label: const Text('New Requisition'),
+          ],
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () async {
+            await Navigator.pushNamed(context, '/job-requisitions/create');
+            ref.invalidate(jobRequisitionsProvider);
+          },
+          icon: const Icon(Icons.add),
+          label: const Text('New Requisition'),
+        ),
       ),
     );
   }
@@ -320,9 +300,7 @@ class _JobRequisitionsListScreenState
         final repo = ref.read(jobRequisitionRepositoryProvider);
         await repo.deleteRequisition(req.id!);
         if (mounted) {
-          ref.refresh(jobRequisitionsProvider(JobRequisitionFilter(
-              status: _selectedStatus,
-              search: _searchQuery.isEmpty ? null : _searchQuery)));
+          ref.invalidate(jobRequisitionsProvider);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Requisition deleted successfully'),
@@ -358,12 +336,13 @@ class _JobRequisitionsListScreenState
     } catch (e) {
       if (mounted) {
         String message = 'Error sharing to LinkedIn: $e';
-        if (e.toString().contains('401')) {
+        if (e is DioException) {
+          if (e.response?.data != null && e.response!.data is Map) {
+            message = (e.response!.data as Map)['detail'] ?? message;
+          }
+        } else if (e.toString().contains('401')) {
           message =
               'LinkedIn Authentication Failed (401). Please check if your access token is valid and configured in the backend .env file.';
-        } else if (e.toString().contains('400')) {
-          message =
-              'LinkedIn sharing is disabled or JD is missing. Please check requisition details and settings.';
         }
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -440,12 +419,7 @@ class _JobRequisitionsListScreenState
                         });
                         if (mounted) {
                           Navigator.pop(context);
-                          ref.refresh(jobRequisitionsProvider(
-                              JobRequisitionFilter(
-                                  status: _selectedStatus,
-                                  search: _searchQuery.isEmpty
-                                      ? null
-                                      : _searchQuery)));
+                          ref.invalidate(jobRequisitionsProvider);
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                                 content: Text('Requisition rejected')),
@@ -486,12 +460,8 @@ class _JobRequisitionsListScreenState
                         });
                         if (mounted) {
                           Navigator.pop(context);
-                          ref.refresh(jobRequisitionsProvider(
-                              JobRequisitionFilter(
-                                  status: _selectedStatus,
-                                  search: _searchQuery.isEmpty
-                                      ? null
-                                      : _searchQuery)));
+                          ref.invalidate(jobRequisitionsProvider);
+                          ref.invalidate(jobPostingsProvider);
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                                 content: Text('Requisition approved')),

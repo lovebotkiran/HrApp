@@ -3,6 +3,9 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
 import uuid
+import logging
+
+logger = logging.getLogger(__name__)
 
 from infrastructure.database.connection import get_db
 from infrastructure.database.models import (
@@ -117,6 +120,19 @@ async def list_job_requisitions(
     # Sort by created_at descending
     requisitions = query.order_by(JobRequisition.created_at.desc()).offset(skip).limit(limit).all()
     return requisitions
+
+
+@router.get("/departments", response_model=List[str])
+async def list_departments(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    List all unique departments from job requisitions.
+    """
+    departments = db.query(JobRequisition.department).distinct().all()
+    # departments is a list of tuples like [('Engineering',), ('Product',)]
+    return [d[0] for d in departments if d[0]]
 
 
 @router.get("/{requisition_id}", response_model=JobRequisitionResponse)
@@ -461,13 +477,13 @@ async def share_requisition_linkedin(
     if not requisition.job_description:
          raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Job requisition must have a description to be shared"
+            detail="Job Requisition Job Description (JD) is missing. Please generate the JD before sharing."
         )
 
     if not settings.LINKEDIN_ENABLED:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="LinkedIn sharing is currently disabled in settings"
+            detail="LinkedIn sharing is currently DISABLED in the system settings (.env)."
         )
         
     # Find associated Job Posting to get the ID for the URL
@@ -480,23 +496,44 @@ async def share_requisition_linkedin(
     target_id = posting.id if posting else requisition.id
 
     # Construct apply URL matching frontend route /apply/{id}
-    # Note: Using hash routing if applicable, e.g. /#/apply/
-    # If settings.FRONTEND_URL includes trailing slash, handle it
+    # Prefer clean path (no hash) to improve compatibility when sharing to external services
     base_url = settings.FRONTEND_URL.rstrip('/')
-    apply_url = f"{base_url}/#/apply/{target_id}"
+    apply_url = f"{base_url}/apply/{target_id}"
     
-    result = await linkedin_service.share_job(
-        title=requisition.title,
-        description=requisition.job_description,
-        apply_url=apply_url
-    )
+    # Check for company logo if exists
+    import os
+    logo_path = os.path.join(os.getcwd(), "assets", "logos", "logo.png")
+    if not os.path.exists(logo_path):
+        logo_path = None
+
+    # Generate AI highlights for the image
+    highlights = await ai_service.summarize_jd_for_image(requisition.job_description)
+
+    try:
+        result = await linkedin_service.share_job(
+            title=requisition.title,
+            description=requisition.job_description,
+            apply_url=apply_url,
+            generate_image=True,
+            logo_path=logo_path,
+            highlights=highlights
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error in LinkedIn sharing flow: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal error during LinkedIn sharing: {str(e)}"
+        )
     
     if not result.get("success"):
         # If we have a specific status code from LinkedIn (like 401), use it
         error_status = result.get("status_code", status.HTTP_500_INTERNAL_SERVER_ERROR)
+        # Combine message and detail if available for better debugging
+        error_msg = result.get("message", "Failed to share to LinkedIn")
+        
         raise HTTPException(
             status_code=error_status,
-            detail=result.get("message", "Failed to share to LinkedIn")
+            detail=error_msg
         )
         
     return {

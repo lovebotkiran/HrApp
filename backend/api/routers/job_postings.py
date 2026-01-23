@@ -13,9 +13,76 @@ from application.schemas import (
     MessageResponse
 )
 from application.services.ai_service import AIService
+from application.services.linkedin_service import LinkedInService
+from core.config import settings
 
 router = APIRouter()
 ai_service = AIService()
+linkedin_service = LinkedInService()
+
+
+@router.post("/{posting_id}/share-linkedin", response_model=MessageResponse)
+async def share_job_posting_linkedin(
+    posting_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Share a job posting to LinkedIn with AI-generated images and highlights.
+    """
+    posting = db.query(JobPosting).filter(JobPosting.id == posting_id).first()
+    
+    if not posting:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job posting not found"
+        )
+    
+    if not posting.is_active and posting.status_state != "Active":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Can only share active job postings"
+        )
+
+    if not settings.LINKEDIN_ENABLED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="LinkedIn sharing is currently disabled in settings"
+        )
+
+    # Construct apply URL matching frontend route /apply/{id}
+    base_url = settings.FRONTEND_URL.rstrip('/')
+    apply_url = f"{base_url}/#/apply/{posting.id}"
+    
+    # Check for company logo if exists
+    import os
+    logo_path = os.path.join(os.getcwd(), "assets", "logos", "logo.png")
+    if not os.path.exists(logo_path):
+        logo_path = None
+
+    # Generate AI highlights for the image
+    highlights = await ai_service.summarize_jd_for_image(posting.description)
+
+    result = await linkedin_service.share_job(
+        title=posting.title,
+        description=posting.description,
+        apply_url=apply_url,
+        generate_image=True,
+        logo_path=logo_path,
+        highlights=highlights
+    )
+    
+    if not result.get("success"):
+        error_status = result.get("status_code", status.HTTP_500_INTERNAL_SERVER_ERROR)
+        raise HTTPException(
+            status_code=error_status,
+            detail=result.get("message", "Failed to share to LinkedIn")
+        )
+        
+    return {
+        "message": "Successfully shared job posting to LinkedIn",
+        "success": True
+    }
 
 
 @router.post("/", response_model=JobPostingResponse, status_code=status.HTTP_201_CREATED)
@@ -69,11 +136,12 @@ async def list_job_postings(
     status: Optional[str] = None,
     employment_type: Optional[str] = None,
     location: Optional[str] = None,
+    department: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """
     List all job postings (public endpoint).
-    Filter by status (Active, Draft, Expired), attributes.
+    Filter by status (Active, Draft, Expired), attributes and department.
     """
     query = db.query(JobPosting)
     now = datetime.utcnow()
@@ -120,6 +188,9 @@ async def list_job_postings(
         query = query.filter(JobPosting.employment_type == employment_type)
     if location:
         query = query.filter(JobPosting.location.ilike(f"%{location}%"))
+        
+    if department:
+        query = query.join(JobRequisition).filter(JobRequisition.department == department)
     
     postings = query.order_by(JobPosting.created_at.desc()).offset(skip).limit(limit).all()
     return postings
