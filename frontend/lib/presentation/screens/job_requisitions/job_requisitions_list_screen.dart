@@ -324,12 +324,14 @@ class _JobRequisitionsListScreenState
   Future<void> _shareToLinkedIn(JobRequisition req) async {
     try {
       final repo = ref.read(jobRequisitionRepositoryProvider);
-      await repo.shareOnLinkedIn(req.id!);
+      final result = await repo.shareOnLinkedIn(req.id!);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Requisition shared to LinkedIn successfully'),
+          SnackBar(
+            content: Text(result['message'] ??
+                'Requisition shared to LinkedIn successfully'),
             backgroundColor: AppTheme.successColor,
+            duration: const Duration(seconds: 5),
           ),
         );
       }

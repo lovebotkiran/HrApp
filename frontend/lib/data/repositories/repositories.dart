@@ -40,7 +40,10 @@ class JobRequisitionRepository {
           String id, Map<String, dynamic> data) =>
       _apiClient.approveRequisition(id, data);
 
-  Future<void> shareOnLinkedIn(String id) => _apiClient.shareToLinkedIn(id);
+  Future<Map<String, dynamic>> shareOnLinkedIn(String id) async {
+    final response = await _apiClient.shareToLinkedIn(id);
+    return response.data as Map<String, dynamic>;
+  }
 
   Future<void> deleteRequisition(String id) => _apiClient.deleteRequisition(id);
 

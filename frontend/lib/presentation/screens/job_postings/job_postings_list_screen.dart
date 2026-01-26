@@ -209,7 +209,7 @@ class _JobPostingsListScreenState extends ConsumerState<JobPostingsListScreen> {
                                         '/apply/${posting['id']}',
                                       );
                                     },
-                              icon: const Icon(Icons.open_in_new, size: 18),
+                              // icon: const Icon(Icons.open_in_new, size: 18),
                               label: const Text('Apply'),
                               style: OutlinedButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(
