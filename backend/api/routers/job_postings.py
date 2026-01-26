@@ -52,7 +52,7 @@ async def share_job_posting_linkedin(
 
     # Construct apply URL matching frontend route /apply/{id}
     base_url = settings.FRONTEND_URL.rstrip('/')
-    apply_url = f"{base_url}/#/apply/{posting.id}"
+    apply_url = f"{base_url}/apply/{posting.id}"
     
     # Check for company logo if exists
     import os
@@ -60,11 +60,13 @@ async def share_job_posting_linkedin(
     if not os.path.exists(logo_path):
         logo_path = None
 
-    # Generate AI highlights for the image
-    highlights = await ai_service.summarize_jd_for_image(posting.description)
+    # Generate AI structured content for the professional image
+    ai_summary = await ai_service.summarize_jd_for_image(posting.description)
+    poster_title = ai_summary.get("job_title", posting.title)
+    highlights = ai_summary.get("requirements", [])
 
     result = await linkedin_service.share_job(
-        title=posting.title,
+        title=poster_title,
         description=posting.description,
         apply_url=apply_url,
         generate_image=True,

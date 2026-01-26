@@ -414,99 +414,159 @@ class LinkedInService:
 
     async def generate_hiring_image(self, title: str, logo_path: str = None, highlights: list = None) -> Optional[str]:
         """
-        Generates a premiumRecruit-styled image using PIL.
-        Matches the user sample style: High impact orange, clean typography, multiple sections.
+        Generates a premium professional job poster using PIL based on specific design rules.
         """
         try:
-            # High-res canvas (LinkedIn portrait 1080x1350)
+            # 1. Setup Canvas
             width, height = 1080, 1350
             img = Image.new('RGB', (width, height), color=(255, 255, 255))
             draw = ImageDraw.Draw(img)
 
-            # Modern Color Palette
-            ORANGE = (255, 107, 0)      # Vivid Recruiter Orange
-            NAVY = (15, 23, 42)         # Slate Navy
-            WHITE = (255, 255, 255)
-            LIGHT_GREY = (248, 250, 252)
-            DARK_GREY = (51, 65, 85)
+            # 2. Color Palette
+            NAVY = (15, 23, 42)      # #0F172A
+            ORANGE = (255, 107, 0)   # #FF6B00
+            WHITE = (255, 255, 255)  # #FFFFFF
+            LIGHT_GRAY = (241, 245, 249) # #F1F5F9
+            DARK_GRAY = (51, 65, 85) # #334155
 
-            # Draw top grey accent
-            draw.rectangle([0, 0, width, height // 4], fill=LIGHT_GREY)
-            
-            # Draw main orange footer/base
-            draw.rectangle([0, height - 250, width, height], fill=ORANGE)
+            # 3. Background Blocks
+            # Top accent
+            draw.rectangle([0, 0, width, 400], fill=LIGHT_GRAY)
+            # Bottom footer bar
+            draw.rectangle([0, height - 200, width, height], fill=ORANGE)
 
-            # Load Fonts
-            font_path_bold = "C:\\Windows\\Fonts\\arialbd.ttf" if os.name == 'nt' else "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-            font_path_reg = "C:\\Windows\\Fonts\\arial.ttf" if os.name == 'nt' else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+            # 4. Load Fonts
+            font_paths_bold = [
+                "C:\\Windows\\Fonts\\arialbd.ttf",
+                "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+            ]
+            font_paths_reg = [
+                "C:\\Windows\\Fonts\\arial.ttf",
+                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+            ]
             
+            # Try to find reportlab fonts as a secondary fallback
+            try:
+                import reportlab
+                rl_path = os.path.dirname(reportlab.__file__)
+                font_paths_bold.append(os.path.join(rl_path, "fonts", "VeraBd.ttf"))
+                font_paths_reg.append(os.path.join(rl_path, "fonts", "Vera.ttf"))
+            except Exception:
+                pass
+
             def get_font(size, bold=True):
-                path = font_path_bold if bold else font_path_reg
+                paths = font_paths_bold if bold else font_paths_reg
+                for path in paths:
+                    if os.path.exists(path):
+                        try:
+                            return ImageFont.truetype(path, size)
+                        except Exception as e:
+                            logger.warning(f"Failed to load font at {path}: {e}")
+                
+                # If everything fails, try to load any system font
                 try:
-                    return ImageFont.truetype(path, size)
+                    return ImageFont.truetype("arial.ttf" if not bold else "arialbd.ttf", size)
                 except:
-                    return ImageFont.load_default()
+                    pass
+                
+                logger.error(f"CRITICAL: Could not find any suitable font for size {size}. Falling back to default (TINY).")
+                return ImageFont.load_default()
 
-            # 1. Main Header: "WE ARE" (Paper-like background effect placeholder)
-            font_we_are = get_font(85, bold=True)
-            draw.text((100, 100), "WE ARE", font=font_we_are, fill=NAVY)
+            # 5. SECTION 1: HEADER (TOP-LEFT)
+            # Vertical Orange Stripe
+            draw.rectangle([100, 60, 115, 260], fill=ORANGE)
             
-            # 2. Hero Text: "HIRING!" (Large Orange)
-            font_hiring = get_font(230, bold=True)
-            draw.text((90, 170), "HIRING!", font=font_hiring, fill=ORANGE)
+            draw.text((145, 60), "WE ARE", font=get_font(90, bold=True), fill=NAVY)
+            draw.text((145, 140), "HIRING!", font=get_font(155, bold=True), fill=ORANGE)
 
-            # 3. Position Section
-            font_section = get_font(60, bold=True)
-            draw.text((100, 480), "OPEN POSITION", font=font_section, fill=ORANGE)
+            # 6. SECTION 5: BRANDING (TOP-RIGHT)
+            brand_text = "AGENTIC HR"
+            brand_font = get_font(45, bold=True)
+            b_bbox = draw.textbbox((0, 0), brand_text, font=brand_font)
+            b_w = b_bbox[2] - b_bbox[0]
+            draw.text((width - b_w - 90, 60), brand_text, font=brand_font, fill=NAVY)
+
+            # 7. SECTION 2: JOB TITLE BANNER (CENTER)
+            banner_y = 350
+            banner_h = 140
+            draw.rectangle([0, banner_y, width, banner_y + banner_h], fill=NAVY)
             
-            # Position Title Bar
-            draw.rectangle([80, 560, width - 80, 680], fill=NAVY)
-            font_title = get_font(70, bold=True)
+            # Dynamic Font Sizing for Title
             title_text = title.upper()
+            title_font_size = 75
+            font_title = get_font(title_font_size, bold=True)
             t_bbox = draw.textbbox((0, 0), title_text, font=font_title)
             t_w = t_bbox[2] - t_bbox[0]
-            draw.text(((width - t_w) // 2, 582), title_text, font=font_title, fill=WHITE)
+            
+            while t_w > (width - 150) and title_font_size > 40:
+                title_font_size -= 5
+                font_title = get_font(title_font_size, bold=True)
+                t_bbox = draw.textbbox((0, 0), title_text, font=font_title)
+                t_w = t_bbox[2] - t_bbox[0]
 
-            # 4. Job Requirements Section
+            t_h = t_bbox[3] - t_bbox[1]
+            draw.text(((width - t_w) // 2, banner_y + (banner_h - t_h) // 2 - 5), title_text, font=font_title, fill=WHITE)
+
+            # 8. SECTION 3: HIGHLIGHTS / REQUIREMENTS
+            start_y = 540
+            draw.text((100, start_y), "WHAT WE'RE LOOKING FOR", font=get_font(50, bold=True), fill=NAVY)
+            
             if highlights:
-                draw.text((100, 750), "JOB REQUIREMENTS", font=font_section, fill=ORANGE)
+                y_offset = start_y + 90
+                font_item = get_font(36, bold=False) # Slightly smaller for 5 items
+                max_w = width - 250
+                line_spacing = 42
                 
-                y_offset = 840
-                font_item = get_font(45, bold=False)
+                # Show up to 5 items with wrapping
                 for item in highlights[:5]:
-                    # Arrowhead bullet
-                    draw.polygon([(80, y_offset+10), (105, y_offset+25), (80, y_offset+40)], fill=ORANGE)
-                    # Wrap/truncate text
-                    txt = item if len(item) < 50 else item[:47] + "..."
-                    draw.text((130, y_offset), txt, font=font_item, fill=DARK_GREY)
-                    y_offset += 80
+                    # Stop drawing if we reach the orange footer (starts at 1150)
+                    if y_offset > 1110:
+                        break
 
-            # 5. Bottom Info (on Orange)
-            font_footer_label = get_font(45, bold=True)
-            font_footer_val = get_font(40, bold=False)
-            
-            draw.text((100, height - 190), "SUBMIT YOUR CV AT:", font=font_footer_label, fill=WHITE)
-            draw.text((100, height - 135), "hr@agentichr.com", font=font_footer_val, fill=WHITE)
-            
-            draw.text((width - 450, height - 190), "MORE INFORMATION:", font=font_footer_label, fill=WHITE)
-            draw.text((width - 450, height - 135), "www.agentichr.com", font=font_footer_val, fill=WHITE)
+                    # Orange triangular bullet
+                    bullet_pts = [(100, y_offset + 5), (125, y_offset + 19), (100, y_offset + 33)]
+                    draw.polygon(bullet_pts, fill=ORANGE)
+                    
+                    # Wrap text
+                    words = item.strip().split()
+                    lines = []
+                    current_line = ""
+                    for word in words:
+                        test_line = (current_line + " " + word).strip()
+                        w_bbox = draw.textbbox((0, 0), test_line, font=font_item)
+                        if (w_bbox[2] - w_bbox[0]) <= max_w:
+                            current_line = test_line
+                        else:
+                            if current_line: lines.append(current_line)
+                            current_line = word
+                    if current_line: lines.append(current_line)
 
-            # 6. Logo (Top Right)
-            if logo_path and os.path.exists(logo_path):
-                logo = Image.open(logo_path).convert("RGBA")
-                logo.thumbnail((300, 100), Image.Resampling.LANCZOS)
-                img.paste(logo, (width - 350, 100), logo)
-            else:
-                font_logo = get_font(55, bold=True)
-                draw.text((width - 400, 110), "AGENTIC HR", font=font_logo, fill=NAVY)
+                    # Draw text lines (max 2)
+                    for i, line_text in enumerate(lines[:2]):
+                        draw.text((145, y_offset + (i * line_spacing)), line_text, font=font_item, fill=DARK_GRAY)
+                    
+                    # Update Y position for next item - tighter spacing
+                    y_offset += (len(lines[:2]) * line_spacing) + 22
 
-            # Save
-            filename = f"hiring_{title.replace(' ', '_').lower()}.png"
+            # 9. SECTION 4: FOOTER CTA
+            font_cta = get_font(70, bold=True)
+            cta_text = "APPLY NOW"
+            c_bbox = draw.textbbox((0, 0), cta_text, font=font_cta)
+            c_w = c_bbox[2] - c_bbox[0]
+            draw.text(((width - c_w) // 2, height - 135), cta_text, font=font_cta, fill=WHITE)
+
+            # 10. Save and Return
+            filename = f"poster_{title.replace(' ', '_').lower()}.png"
             output_path = os.path.join(self.output_dir, filename)
             img.save(output_path)
             
+            logger.info(f"Professional job poster generated at: {output_path}")
             return output_path
 
         except Exception as e:
-            logger.error(f"Error generating premium hiring image: {e}")
+            logger.error(f"Error in generate_hiring_image: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return None

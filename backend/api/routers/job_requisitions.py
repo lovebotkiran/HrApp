@@ -506,8 +506,10 @@ async def share_requisition_linkedin(
     if not os.path.exists(logo_path):
         logo_path = None
 
-    # Generate AI highlights for the image
-    highlights = await ai_service.summarize_jd_for_image(requisition.job_description)
+    # Generate AI structured content for the professional image
+    ai_summary = await ai_service.summarize_jd_for_image(requisition.job_description)
+    poster_title = ai_summary.get("job_title", requisition.title)
+    highlights = ai_summary.get("requirements", [])
 
     # Combine JD fields into a robust "Full" description
     def clean_text(text):
@@ -532,12 +534,12 @@ async def share_requisition_linkedin(
         
     try:
         result = await linkedin_service.share_job(
-            title=requisition.title,
+            title=poster_title,
             description=full_description,
             apply_url=apply_url,
-            generate_image=False, # Disabled as per user request
-            logo_path=None,
-            highlights=None
+            generate_image=True, 
+            logo_path=logo_path,
+            highlights=highlights
         )
     except Exception as e:
         logger.error(f"Unexpected error in LinkedIn sharing flow: {e}")

@@ -171,24 +171,33 @@ class AIService:
             logger.error(f"Error ranking candidate: {e}")
             return {"score": 0, "reasoning": f"AI Error: {e}"}
 
-    async def summarize_jd_for_image(self, job_description: str) -> List[str]:
-        """Summarizes a JD into 3-4 short punchy highlights for a social media image."""
+    async def summarize_jd_for_image(self, job_description: str) -> Dict[str, Any]:
+        """Summarizes a JD into a structured format for a professional hiring image."""
         prompt = f"""
-        Analyze this Job Description and extract 4 short, punchy highlights (max 3 words each) that would look great on a hiring image.
-        Examples: "Competitive Salary", "Remote Friendly", "Modern Tech Stack", "Health Benefits".
+        Analyze the following Job Description and extract two things:
+        1. A punchy Job Title (max 3 words).
+        2. Exactly 5 clear, descriptive requirements (8-10 words EACH).
+        
+        CRITICAL: Requirements should be clear and professional. They will be wrapped across two lines on the poster. 
+        Example requirements: "Expertise in Python, Django and REST API development", "5+ years of experience in enterprise IT support", "Strong knowledge of AWS Cloud and DevOps practices".
         
         Job Description:
         {job_description[:2000]}
         
-        Return ONLY the highlights as a JSON list of strings. Do NOT include markdown.
+        Return ONLY a JSON object with this structure:
+        {{
+            "job_title": "STRING",
+            "requirements": ["STRING", "STRING", "STRING", "STRING"]
+        }}
+        Do NOT include any markdown or explanatory text.
         """
         try:
             response = self.llm.invoke(prompt)
-            start_idx = response.find('[')
-            end_idx = response.rfind(']') + 1
+            start_idx = response.find('{')
+            end_idx = response.rfind('}') + 1
             if start_idx != -1:
                 return json.loads(response[start_idx:end_idx])
-            return []
+            return {"job_title": "We Are Hiring", "requirements": []}
         except Exception as e:
             logger.error(f"Error summarizing JD for image: {e}")
-            return []
+            return {"job_title": "We Are Hiring", "requirements": []}
