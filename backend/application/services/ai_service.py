@@ -18,8 +18,8 @@ class AIService:
         self.llm = Ollama(
             base_url=self.ollama_base_url, 
             model=self.model_name,
-            num_predict=2048,
-            num_ctx=4096
+            num_predict=4096,
+            num_ctx=8192
         )
 
     async def extract_text_from_file(self, file_path: str, mime_type: str = "application/pdf") -> str:

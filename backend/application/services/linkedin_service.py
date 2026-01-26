@@ -25,6 +25,11 @@ class LinkedInService:
         if "YOUR_ORG_ID_HERE" in self.org_urn:
             self.org_urn = ""
         
+        # Auto-prefix if only the numerical ID was provided
+        if self.org_urn and self.org_urn.isdigit():
+            self.org_urn = f"urn:li:organization:{self.org_urn}"
+            logger.info(f"Auto-prefixed LinkedIn Organization URN: {self.org_urn}")
+        
         
     async def share_job(self, title: str, description: str, apply_url: str = "", image_path: str = None, generate_image: bool = True, logo_path: str = None, highlights: list = None) -> Dict[str, Any]:
         """
@@ -42,12 +47,17 @@ class LinkedInService:
             formatted_description = self._format_commentary(description)
             apply_text = self._to_bold("Apply here:")
             
-            # Ensure description isn't too long (LinkedIn limit is 3000 characters)
-            commentary = f"{formatted_title}\n\n{formatted_description}\n\n{apply_text} {apply_url}"
-            if len(commentary) > 2900:
-                logger.warning(f"Commentary too long ({len(commentary)} chars). Truncating.")
-                formatted_description = formatted_description[:2000] + "..."
-                commentary = f"{formatted_title}\n\n{formatted_description}\n\n{apply_text} {apply_url}"
+            # LinkedIn Posts API character limit (requested to be 10000)
+            header = f"{formatted_title}\n\n"
+            footer = f"\n\n{apply_text} {apply_url}"
+            
+            max_desc_len = 10000 - len(header) - len(footer) - 5 # extra safety
+            
+            if len(formatted_description) > max_desc_len:
+                logger.warning(f"Commentary too long ({len(formatted_description) + len(header) + len(footer)} chars). Truncating.")
+                formatted_description = formatted_description[:max_desc_len - 3] + "..."
+            
+            commentary = f"{header}{formatted_description}{footer}"
 
             # Always get the person URN first as a reliable fallback
             person_urn = await self._get_author_urn()
@@ -94,7 +104,8 @@ class LinkedInService:
                     "LinkedIn-Version": "202410" 
                 }
                 
-                logger.info(f"Sharing to LinkedIn as {author_urn}")
+                logger.info(f"Sharing to LinkedIn as {author_urn}. Commentary length: {len(payload['commentary'])}")
+                logger.debug(f"Payload: {payload}")
                 response = await client.post(
                     "https://api.linkedin.com/v2/posts",
                     headers=headers,
@@ -102,19 +113,28 @@ class LinkedInService:
                 )
                 
                 if response.status_code in [201, 200]:
-                    return {"success": True, "data": response.json() if response.text else {}}
+                    logger.info("Successfully posted to LinkedIn Organization Page.")
+                    return {"success": True, "data": response.json() if response.text else {}, "message": "Successfully shared to LinkedIn Company Page"}
                 
                 # Fallback: If we tried to post as an organization and got 403, try as the person
                 if response.status_code == 403 and author_urn.startswith("urn:li:organization:") and person_urn:
                     logger.warning(f"Failed to post as organization {author_urn} (403). Falling back to personal post as {person_urn}")
                     payload["author"] = person_urn
                     
-                    # IMPORTANT: Clear media content if it was registered with the org owner.
-                    # A person cannot post an asset owned by an organization unless they share it differently.
-                    # Falling back to a text-only post is better than a total failure.
-                    if "content" in payload:
-                        del payload["content"]
-                        logger.info("Cleared media from fallback post due to ownership constraints.")
+                    # Try to re-upload image for person owner if organization owner failed
+                    if image_path:
+                        logger.info("Attempting to re-upload image for personal profile owner fallback...")
+                        asset_urn = await self._upload_image(person_urn, image_path)
+                        if asset_urn:
+                            payload["content"] = {
+                                "media": {
+                                    "title": title,
+                                    "id": asset_urn
+                                }
+                            }
+                    else:
+                        if "content" in payload:
+                            del payload["content"]
                     
                     response = await client.post(
                         "https://api.linkedin.com/v2/posts",
@@ -144,7 +164,8 @@ class LinkedInService:
                     "success": False,
                     "message": msg,
                     "status_code": response.status_code,
-                    "detail": error_body
+                    "detail": error_body,
+                    "author_used": author_urn
                 }
                     
         except Exception as e:
@@ -349,14 +370,24 @@ class LinkedInService:
         - # Sub-heading: -> **Bold Title Case**
         - ## List Item -> • List Item
         - Paragraphs -> Standard text
+        - Handles Windows line endings and cleans up whitespace.
         """
+        if not text:
+            return ""
+            
+        # Standardize line endings
+        text = text.replace('\r\n', '\n').replace('\r', '\n')
         lines = text.split('\n')
         formatted_lines = []
         
         for line in lines:
             stripped = line.strip()
             
-            # 1. Handle Headings starting with '#'
+            if not stripped:
+                formatted_lines.append("")
+                continue
+
+            # 1. Handle Headings starting with '#' (but not '##')
             if stripped.startswith('#') and not stripped.startswith('##'):
                 content = stripped.lstrip('#').strip()
                 if content.endswith(':'):
@@ -370,75 +401,106 @@ class LinkedInService:
             elif stripped.startswith('##'):
                 content = stripped.lstrip('##').strip()
                 formatted_lines.append(f"• {content}")
-                
+            
             # 3. Handle sub-labels that might not have # but end in : (e.g. Compensation:)
-            elif stripped.endswith(':') and len(stripped) < 40 and not stripped.startswith('#'):
+            elif stripped.endswith(':') and len(stripped) < 40:
                 formatted_lines.append(self._to_bold(stripped))
                 
-            # 4. Normal text
+            # 4. Normal text - use stripped line to avoid \r issues
             else:
-                formatted_lines.append(line)
+                formatted_lines.append(stripped)
                 
         return '\n'.join(formatted_lines)
 
     async def generate_hiring_image(self, title: str, logo_path: str = None, highlights: list = None) -> Optional[str]:
         """
-        Generates a 'We Are Hiring' image using a template and overlays the job title, logo, and AI highlights.
+        Generates a premiumRecruit-styled image using PIL.
+        Matches the user sample style: High impact orange, clean typography, multiple sections.
         """
         try:
-            if not os.path.exists(self.template_path):
-                logger.error(f"Template image not found at {self.template_path}")
-                return None
-
-            # Load template
-            img = Image.open(self.template_path)
+            # High-res canvas (LinkedIn portrait 1080x1350)
+            width, height = 1080, 1350
+            img = Image.new('RGB', (width, height), color=(255, 255, 255))
             draw = ImageDraw.Draw(img)
-            width, height = img.size
 
-            # Load fonts
+            # Modern Color Palette
+            ORANGE = (255, 107, 0)      # Vivid Recruiter Orange
+            NAVY = (15, 23, 42)         # Slate Navy
+            WHITE = (255, 255, 255)
+            LIGHT_GREY = (248, 250, 252)
+            DARK_GREY = (51, 65, 85)
+
+            # Draw top grey accent
+            draw.rectangle([0, 0, width, height // 4], fill=LIGHT_GREY)
+            
+            # Draw main orange footer/base
+            draw.rectangle([0, height - 250, width, height], fill=ORANGE)
+
+            # Load Fonts
             font_path_bold = "C:\\Windows\\Fonts\\arialbd.ttf" if os.name == 'nt' else "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
             font_path_reg = "C:\\Windows\\Fonts\\arial.ttf" if os.name == 'nt' else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
             
-            if not os.path.exists(font_path_bold):
-                font_title = ImageFont.load_default()
-                font_hiring = ImageFont.load_default()
-                font_highlight = ImageFont.load_default()
-            else:
-                font_hiring = ImageFont.truetype(font_path_bold, 120)
-                font_title = ImageFont.truetype(font_path_bold, 80)
-                font_highlight = ImageFont.truetype(font_path_reg, 50)
+            def get_font(size, bold=True):
+                path = font_path_bold if bold else font_path_reg
+                try:
+                    return ImageFont.truetype(path, size)
+                except:
+                    return ImageFont.load_default()
 
-            # Draw "WE ARE HIRING"
-            hiring_text = "WE ARE HIRING"
-            hiring_bbox = draw.textbbox((0, 0), hiring_text, font=font_hiring)
-            hiring_w = hiring_bbox[2] - hiring_bbox[0]
+            # 1. Main Header: "WE ARE" (Paper-like background effect placeholder)
+            font_we_are = get_font(85, bold=True)
+            draw.text((100, 100), "WE ARE", font=font_we_are, fill=NAVY)
             
-            # Center it horizontally on the left 40%
-            x_center = int(width * 0.4 / 2)
-            draw.text((x_center - (hiring_w // 2), height * 0.15), hiring_text, font=font_hiring, fill=(255, 255, 255))
+            # 2. Hero Text: "HIRING!" (Large Orange)
+            font_hiring = get_font(230, bold=True)
+            draw.text((90, 170), "HIRING!", font=font_hiring, fill=ORANGE)
 
-            # Draw Job Title
+            # 3. Position Section
+            font_section = get_font(60, bold=True)
+            draw.text((100, 480), "OPEN POSITION", font=font_section, fill=ORANGE)
+            
+            # Position Title Bar
+            draw.rectangle([80, 560, width - 80, 680], fill=NAVY)
+            font_title = get_font(70, bold=True)
             title_text = title.upper()
-            title_bbox = draw.textbbox((0, 0), title_text, font=font_title)
-            title_w = title_bbox[2] - title_bbox[0]
-            draw.text((x_center - (title_w // 2), height * 0.3), title_text, font=font_title, fill=(255, 255, 255))
+            t_bbox = draw.textbbox((0, 0), title_text, font=font_title)
+            t_w = t_bbox[2] - t_bbox[0]
+            draw.text(((width - t_w) // 2, 582), title_text, font=font_title, fill=WHITE)
 
-            # Draw AI Highlights
+            # 4. Job Requirements Section
             if highlights:
-                y_offset = height * 0.45
-                for highlight in highlights[:4]:
-                    h_text = f"• {highlight}"
-                    draw.text((50, y_offset), h_text, font=font_highlight, fill=(255, 255, 255))
-                    y_offset += 70
+                draw.text((100, 750), "JOB REQUIREMENTS", font=font_section, fill=ORANGE)
+                
+                y_offset = 840
+                font_item = get_font(45, bold=False)
+                for item in highlights[:5]:
+                    # Arrowhead bullet
+                    draw.polygon([(80, y_offset+10), (105, y_offset+25), (80, y_offset+40)], fill=ORANGE)
+                    # Wrap/truncate text
+                    txt = item if len(item) < 50 else item[:47] + "..."
+                    draw.text((130, y_offset), txt, font=font_item, fill=DARK_GREY)
+                    y_offset += 80
 
-            # Add Logo if provided
+            # 5. Bottom Info (on Orange)
+            font_footer_label = get_font(45, bold=True)
+            font_footer_val = get_font(40, bold=False)
+            
+            draw.text((100, height - 190), "SUBMIT YOUR CV AT:", font=font_footer_label, fill=WHITE)
+            draw.text((100, height - 135), "hr@agentichr.com", font=font_footer_val, fill=WHITE)
+            
+            draw.text((width - 450, height - 190), "MORE INFORMATION:", font=font_footer_label, fill=WHITE)
+            draw.text((width - 450, height - 135), "www.agentichr.com", font=font_footer_val, fill=WHITE)
+
+            # 6. Logo (Top Right)
             if logo_path and os.path.exists(logo_path):
                 logo = Image.open(logo_path).convert("RGBA")
-                logo.thumbnail((200, 200), Image.Resampling.LANCZOS)
-                # Paste logo at bottom left
-                img.paste(logo, (50, height - 250), logo)
+                logo.thumbnail((300, 100), Image.Resampling.LANCZOS)
+                img.paste(logo, (width - 350, 100), logo)
+            else:
+                font_logo = get_font(55, bold=True)
+                draw.text((width - 400, 110), "AGENTIC HR", font=font_logo, fill=NAVY)
 
-            # Save generated image
+            # Save
             filename = f"hiring_{title.replace(' ', '_').lower()}.png"
             output_path = os.path.join(self.output_dir, filename)
             img.save(output_path)
@@ -446,7 +508,5 @@ class LinkedInService:
             return output_path
 
         except Exception as e:
-            logger.error(f"Error generating hiring image: {e}")
-            import traceback
-            logger.error(traceback.format_exc())
+            logger.error(f"Error generating premium hiring image: {e}")
             return None

@@ -340,7 +340,7 @@ async def approve_job_requisition(
                 next_approval.status = "pending"
                 db.commit()
                 approval = next_approval
-
+    
     if not approval and requisition.status != "approved":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -509,14 +509,35 @@ async def share_requisition_linkedin(
     # Generate AI highlights for the image
     highlights = await ai_service.summarize_jd_for_image(requisition.job_description)
 
+    # Combine JD fields into a robust "Full" description
+    def clean_text(text):
+        if not text: return ""
+        # Filter out non-printable characters that might break API/UI
+        return "".join(c for c in text if c.isprintable() or c in "\n\r\t")
+
+    full_description = clean_text(requisition.job_description)
+    jd_lower = full_description.lower()
+    
+    if requisition.responsibilities:
+        resp = clean_text(requisition.responsibilities)
+        if resp.lower() not in jd_lower:
+            full_description += f"\n\n# Key Responsibilities:\n{resp}"
+            
+    if requisition.benefits:
+        ben = clean_text(requisition.benefits)
+        if ben.lower() not in jd_lower:
+            full_description += f"\n\n# What We Offer:\n{ben}"
+            
+    logger.info(f"Final description prepared for LinkedIn. Total chars: {len(full_description)}")
+        
     try:
         result = await linkedin_service.share_job(
             title=requisition.title,
-            description=requisition.job_description,
+            description=full_description,
             apply_url=apply_url,
-            generate_image=True,
-            logo_path=logo_path,
-            highlights=highlights
+            generate_image=False, # Disabled as per user request
+            logo_path=None,
+            highlights=None
         )
     except Exception as e:
         logger.error(f"Unexpected error in LinkedIn sharing flow: {e}")
@@ -528,7 +549,6 @@ async def share_requisition_linkedin(
     if not result.get("success"):
         # If we have a specific status code from LinkedIn (like 401), use it
         error_status = result.get("status_code", status.HTTP_500_INTERNAL_SERVER_ERROR)
-        # Combine message and detail if available for better debugging
         error_msg = result.get("message", "Failed to share to LinkedIn")
         
         raise HTTPException(
@@ -537,8 +557,9 @@ async def share_requisition_linkedin(
         )
         
     return {
-        "message": "Successfully shared to LinkedIn",
-        "success": True
+        "message": result.get("message", "Successfully shared to LinkedIn"),
+        "success": True,
+        "detail": result.get("data")
     }
 
 
