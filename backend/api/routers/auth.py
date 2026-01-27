@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from typing import List
 from datetime import datetime
 
 from infrastructure.database.connection import get_db
@@ -165,3 +166,15 @@ async def logout(current_user: User = Depends(get_current_user)):
         "message": "Successfully logged out",
         "success": True
     }
+
+
+@router.get("/users", response_model=List[UserResponse])
+async def list_users(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    List all active users.
+    """
+    users = db.query(User).filter(User.is_active == True).all()
+    return users

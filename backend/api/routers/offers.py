@@ -17,6 +17,7 @@ from application.schemas import (
     OfferAcceptanceRequest,
     MessageResponse
 )
+from application.services.document_service import DocumentService
 
 router = APIRouter()
 
@@ -417,14 +418,14 @@ async def get_offer_approvals(
     return approvals
 
 
-@router.post("/{offer_id}/generate-letter", response_model=MessageResponse)
-async def generate_offer_letter(
+@router.post("/{offer_id}/generate-documents", response_model=MessageResponse)
+async def generate_offer_documents(
     offer_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """
-    Generate offer letter PDF.
+    Generate offer letter and NDA documents.
     """
     offer = db.query(Offer).filter(Offer.id == offer_id).first()
     
@@ -434,13 +435,57 @@ async def generate_offer_letter(
             detail="Offer not found"
         )
     
-    # TODO: Generate PDF using ReportLab
-    # For now, return placeholder
-    offer.offer_letter_url = f"/documents/offers/{offer_id}/offer_letter.pdf"
-    db.commit()
+    candidate = db.query(Candidate).filter(Candidate.id == offer.candidate_id).first()
+    job_posting = db.query(JobPosting).filter(JobPosting.id == offer.job_posting_id).first()
     
-    return {
-        "message": "Offer letter generated successfully",
-        "success": True,
-        "url": offer.offer_letter_url
-    }
+    if not candidate or not job_posting:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Candidate or Job Posting not found for this offer"
+        )
+
+    doc_service = DocumentService()
+    
+    try:
+        # Generate Offer Letter
+        offer_data = doc_service.get_offer_letter_data(offer, candidate, job_posting)
+        offer_filename = f"Offer_Letter_{candidate.first_name}_{candidate.last_name}_{offer.offer_number}.docx"
+        offer_path = doc_service.generate_document("offer_letter_template.docx", offer_data, offer_filename)
+        
+        # Generate NDA
+        nda_data = doc_service.get_nda_data(offer, candidate, job_posting)
+        nda_filename = f"NDA_{candidate.first_name}_{candidate.last_name}_{offer.offer_number}.docx"
+        nda_path = doc_service.generate_document("nda_template.docx", nda_data, nda_filename)
+        
+        # Update offer with document URLs
+        # Assuming we store them as a comma-separated list or in a JSON field if available
+        # But looking at the model, there's only offer_letter_url.
+        # Let's use that for the offer letter and maybe add a documents field later.
+        offer.offer_letter_url = f"/uploads/documents/{offer_filename}"
+        # We can store the NDA in a similar way if we had a field, for now just offer_letter_url
+        
+        db.commit()
+        
+        return {
+            "message": "Documents generated successfully",
+            "success": True,
+            "url": offer.offer_letter_url
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error generating documents: {str(e)}"
+        )
+
+
+@router.post("/{offer_id}/generate-letter", response_model=MessageResponse)
+async def generate_offer_letter(
+    offer_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Deprecated: Use generate-documents instead.
+    """
+    return await generate_offer_documents(offer_id, db, current_user)

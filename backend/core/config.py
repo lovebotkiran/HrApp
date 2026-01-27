@@ -54,8 +54,9 @@ class Settings(BaseSettings):
     
     # Video Conferencing
     ZOOM_ENABLED: bool = False
-    ZOOM_API_KEY: str = ""
-    ZOOM_API_SECRET: str = ""
+    ZOOM_ACCOUNT_ID: str = ""
+    ZOOM_CLIENT_ID: str = ""
+    ZOOM_CLIENT_SECRET: str = ""
     GOOGLE_MEET_ENABLED: bool = False
     TEAMS_ENABLED: bool = False
     

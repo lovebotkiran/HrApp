@@ -337,7 +337,7 @@ class _CreateJobRequisitionScreenState
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                initialValue: _selectedDepartment,
+                value: _selectedDepartment,
                 decoration: const InputDecoration(
                   labelText: 'Department',
                   border: OutlineInputBorder(),
@@ -364,7 +364,7 @@ class _CreateJobRequisitionScreenState
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                initialValue: _selectedEmploymentType,
+                value: _selectedEmploymentType,
                 decoration: const InputDecoration(
                   labelText: 'Employment Type',
                   border: OutlineInputBorder(),
@@ -392,7 +392,7 @@ class _CreateJobRequisitionScreenState
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<int>(
-                initialValue: _selectedExperience,
+                value: _selectedExperience,
                 decoration: const InputDecoration(
                   labelText: 'Experience (yrs)',
                   border: OutlineInputBorder(),

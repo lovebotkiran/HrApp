@@ -292,6 +292,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           _buildNavItem(Icons.people_outline, 'Candidates', 3),
           _buildNavItem(Icons.assignment_outlined, 'Applications', 4),
           _buildNavItem(Icons.calendar_today_outlined, 'Interviews', 5),
+          _buildNavItem(Icons.checklist_outlined, 'Shortlisted Candidates', 12),
           _buildNavItem(Icons.description_outlined, 'Offers', 6),
           _buildNavItem(Icons.person_add_outlined, 'Onboarding', 7),
           _buildNavItem(Icons.group_outlined, 'Referrals', 8),
@@ -415,6 +416,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         break;
       case 11:
         Navigator.pushNamed(context, '/ai-rankings');
+        break;
+      case 12:
+        Navigator.pushNamed(context, '/shortlisted-candidates');
         break;
     }
   }

@@ -159,7 +159,7 @@ class _CreateInterviewScreenState extends ConsumerState<CreateInterviewScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                initialValue: _interviewType,
+                value: _interviewType,
                 decoration: const InputDecoration(
                   labelText: 'Interview Type',
                   border: OutlineInputBorder(),

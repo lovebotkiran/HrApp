@@ -15,7 +15,7 @@ part 'api_client.g.dart';
 Dio createDio() {
   final dio = Dio(
     BaseOptions(
-      baseUrl: 'http://localhost:8000/api/v1',
+      baseUrl: 'http://127.0.0.1:8000/api/v1',
       connectTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 30),
       headers: {
@@ -47,7 +47,7 @@ Dio createDio() {
               // to avoid infinite loops and interceptor conflicts
               final refreshDio = Dio(
                 BaseOptions(
-                  baseUrl: 'http://localhost:8000/api/v1',
+                  baseUrl: 'http://127.0.0.1:8000/api/v1',
                   headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',

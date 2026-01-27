@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 
 from core.config import settings
 from infrastructure.database.connection import init_db
-from api.routers import auth, job_requisitions, job_postings, candidates, applications, interviews, offers, dashboard, ai, onboarding
+from api.routers import auth, job_requisitions, job_postings, candidates, applications, interviews, offers, dashboard, ai, onboarding, shortlisted_candidates
 
 # Configure logging
 logging.basicConfig(
@@ -54,13 +54,11 @@ app = FastAPI(
 os.makedirs("uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
-# CORS Middleware
 if settings.DEBUG:
-    # In development, allow all local origins to support credentials
+    # In development, allow all localhost origins
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:8080", "http://127.0.0.1:8080", "http://0.0.0.0:8080"],
-        allow_origin_regex=r"https?://(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?",
+        allow_origin_regex="http://localhost:.*",
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -184,6 +182,12 @@ app.include_router(
     onboarding.router,
     prefix=f"{settings.API_PREFIX}/onboarding",
     tags=["Onboarding"]
+)
+
+app.include_router(
+    shortlisted_candidates.router,
+    prefix=f"{settings.API_PREFIX}/shortlisted-candidates",
+    tags=["Shortlisted Candidates"]
 )
 
 

@@ -12,13 +12,37 @@ logger = logging.getLogger(__name__)
 class AIService:
     def __init__(self):
         # We assume Ollama is running locally on default port
-        # Use host.docker.internal if running in Docker and Ollama is on host
         self.ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
         self.model_name = "llama3" 
-        self.llm = Ollama(base_url=self.ollama_base_url, model=self.model_name)
+        self._is_available = None # Lazy check
+        try:
+            self.llm = Ollama(base_url=self.ollama_base_url, model=self.model_name)
+        except Exception as e:
+            logger.warning(f"Failed to initialize Ollama LLM: {e}")
+            self.llm = None
+
+    async def check_availability(self) -> bool:
+        """Checks if Ollama is reachable."""
+        if self._is_available is not None:
+            return self._is_available
+        
+        try:
+            async with httpx.AsyncClient(timeout=1.0) as client:
+                response = await client.get(f"{self.ollama_base_url}/api/tags")
+                self._is_available = response.status_code == 200
+        except Exception:
+            self._is_available = False
+        
+        if not self._is_available:
+            logger.warning("AI Service (Ollama) is not available. AI features will be limited.")
+        return self._is_available
 
     async def extract_text_from_file(self, file_path: str, mime_type: str = "application/pdf") -> str:
         """Extracts text from PDF or plain text files."""
+        if not os.path.exists(file_path):
+            logger.error(f"File not found: {file_path}")
+            return ""
+            
         try:
             if "pdf" in mime_type or file_path.endswith(".pdf"):
                 text = ""
@@ -38,9 +62,12 @@ class AIService:
 
     async def parse_resume(self, file_path: str, mime_type: str = "application/pdf") -> Dict[str, Any]:
         """Parses resume text into structured JSON using LLM."""
+        if not await self.check_availability():
+            return {"error": "AI Service is currently offline. Structured data extraction skipped."}
+
         text = await self.extract_text_from_file(file_path, mime_type)
         if not text:
-            return {"error": "Could not extract text"}
+            return {"error": "Could not extract text from file"}
 
         prompt = f"""
         You are an expert technical recruiter. Analyze the following resume text and extract the key details into a structured JSON format.
@@ -71,8 +98,14 @@ class AIService:
         """
         
         try:
+            if not self.llm:
+                 return {"error": "LLM not initialized"}
+                 
             response = self.llm.invoke(prompt)
             # Naive cleanup of response to finding JSON block
+            if not response:
+                return {"error": "AI returned empty response"}
+                
             start_idx = response.find('{')
             end_idx = response.rfind('}') + 1
             if start_idx != -1 and end_idx != -1:
@@ -80,7 +113,7 @@ class AIService:
                 return json.loads(json_str)
             else:
                 logger.warning(f"AI response did not contain JSON: {response}")
-                return {"error": "AI failed to generate JSON", "raw_response": response}
+                return {"error": "AI failed to generate structured JSON data"}
         except Exception as e:
             logger.error(f"Error calling LLM for resume parsing: {e}")
             return {"error": str(e)}

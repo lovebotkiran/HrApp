@@ -22,6 +22,7 @@ import 'package:agentichr_frontend/presentation/screens/interviews/create_interv
 import 'package:agentichr_frontend/presentation/screens/offers/create_offer_screen.dart';
 import 'package:agentichr_frontend/presentation/screens/candidates/candidate_detail_screen.dart';
 import 'package:agentichr_frontend/presentation/screens/applications/ai_rankings_screen.dart';
+import 'package:agentichr_frontend/presentation/screens/interviews/shortlisted_candidates_screen.dart';
 import 'package:agentichr_frontend/data/models/candidate.dart';
 
 import 'package:agentichr_frontend/presentation/screens/job_postings/create_job_posting_screen.dart';
@@ -82,6 +83,7 @@ class AgenticHRApp extends StatelessWidget {
         '/interviews/create': (context) => const CreateInterviewScreen(),
         '/offers/create': (context) => const CreateOfferScreen(),
         '/ai-rankings': (context) => const AIRankingsScreen(),
+        '/shortlisted-candidates': (context) => const ShortlistedCandidatesScreen(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/candidates/detail') {

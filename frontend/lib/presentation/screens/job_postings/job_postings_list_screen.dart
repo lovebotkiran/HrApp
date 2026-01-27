@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:agentichr_frontend/core/theme/app_theme.dart';
 import 'package:agentichr_frontend/domain/providers/providers.dart';
 import '../applications/ranked_candidates_screen.dart';
+import 'application_form_screen.dart';
 
 class JobPostingsListScreen extends ConsumerStatefulWidget {
   const JobPostingsListScreen({super.key});
@@ -109,14 +110,34 @@ class _JobPostingsListScreenState extends ConsumerState<JobPostingsListScreen> {
                         backgroundColor: _getStatusColor(posting['status']),
                       ),
                     ),
-                    // Action Buttons
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                       child: Row(
                         children: [
-                          if (applicationsCount > 0)
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ApplicationFormScreen(
+                                      jobPosting: posting,
+                                    ),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.send),
+                              label: const Text('Apply'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.primaryColor,
+                                foregroundColor: Colors.white,
+                              ),
+                            ),
+                          ),
+                          if (applicationsCount > 0) ...[
+                            const SizedBox(width: 12),
                             Expanded(
-                              child: ElevatedButton.icon(
+                              child: OutlinedButton.icon(
                                 onPressed: () {
                                   Navigator.push(
                                     context,
@@ -132,16 +153,9 @@ class _JobPostingsListScreenState extends ConsumerState<JobPostingsListScreen> {
                                 },
                                 icon: const Icon(Icons.analytics),
                                 label: Text('Rank ($applicationsCount)'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppTheme.primaryColor,
-                                  foregroundColor: Colors.white,
-                                ),
                               ),
                             ),
-                          if (applicationsCount == 0)
-                            // Placeholder or empty if no actions
-                            const Text('No candidates yet',
-                                style: TextStyle(color: Colors.grey))
+                          ],
                         ],
                       ),
                     ),
