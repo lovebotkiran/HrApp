@@ -69,8 +69,12 @@ class _CreateOfferScreenState extends ConsumerState<CreateOfferScreen> {
         await repo.createOffer({
           'application_id': int.parse(_applicationIdController.text),
           'base_salary': double.parse(_baseSalaryController.text),
-          'bonus': _bonusController.text.isEmpty ? null : double.parse(_bonusController.text),
-          'stock_options': _stockOptionsController.text.isEmpty ? null : double.parse(_stockOptionsController.text),
+          'bonus': _bonusController.text.isEmpty
+              ? null
+              : double.parse(_bonusController.text),
+          'stock_options': _stockOptionsController.text.isEmpty
+              ? null
+              : double.parse(_stockOptionsController.text),
           'start_date': _startDate!.toIso8601String(),
           'expiration_date': _expirationDate!.toIso8601String(),
           'status': 'Draft',
@@ -80,7 +84,7 @@ class _CreateOfferScreenState extends ConsumerState<CreateOfferScreen> {
             const SnackBar(content: Text('Offer created successfully')),
           );
           Navigator.pop(context);
-          ref.refresh(offersProvider(null));
+          ref.invalidate(offersProvider);
         }
       } catch (e) {
         if (mounted) {
@@ -198,7 +202,8 @@ class _CreateOfferScreenState extends ConsumerState<CreateOfferScreen> {
                         child: Text(
                           _expirationDate == null
                               ? 'Select Date'
-                              : DateFormat('yyyy-MM-dd').format(_expirationDate!),
+                              : DateFormat('yyyy-MM-dd')
+                                  .format(_expirationDate!),
                         ),
                       ),
                     ),
@@ -217,7 +222,8 @@ class _CreateOfferScreenState extends ConsumerState<CreateOfferScreen> {
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2),
                       )
                     : const Text('Create Offer'),
               ),

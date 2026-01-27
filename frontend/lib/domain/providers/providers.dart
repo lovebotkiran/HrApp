@@ -3,10 +3,10 @@ import '../../data/datasources/api_client.dart';
 import '../../data/repositories/repositories.dart';
 import '../../data/models/job_requisition.dart';
 import '../../data/models/candidate.dart';
+import '../../data/models/job_posting.dart';
 import '../../data/models/interview.dart';
 import '../../data/models/offer.dart';
 import '../../data/models/application.dart';
-import '../../data/models/dashboard_metrics.dart';
 
 // API Client Provider
 final dioProvider = Provider((ref) => createDio());
@@ -63,13 +63,26 @@ final jobRequisitionsProvider =
         (ref, filter) async {
   final repository = ref.watch(jobRequisitionRepositoryProvider);
   return repository.getRequisitions(
-      status: filter.status, search: filter.search);
+      status: filter.status,
+      search: filter.search,
+      department: filter.department);
+});
+
+final departmentSkillsProvider =
+    FutureProvider.family<List<String>, String>((ref, department) async {
+  final repository = ref.watch(jobRequisitionRepositoryProvider);
+  return repository.getDepartmentSkills(department);
 });
 
 final jobRequisitionDetailProvider =
     FutureProvider.family<JobRequisition, String>((ref, id) async {
   final repository = ref.watch(jobRequisitionRepositoryProvider);
   return repository.getRequisition(id);
+});
+
+final departmentsProvider = FutureProvider<List<String>>((ref) async {
+  final repository = ref.watch(jobRequisitionRepositoryProvider);
+  return repository.getDepartments();
 });
 
 // Candidates Providers
@@ -101,10 +114,13 @@ final offersProvider =
 
 // Job Postings Providers
 final jobPostingsProvider =
-    FutureProvider.family<List<Map<String, dynamic>>, String?>(
-        (ref, status) async {
+    FutureProvider.family<List<Map<String, dynamic>>, JobPostingFilter?>(
+        (ref, filter) async {
   final repository = ref.watch(jobPostingRepositoryProvider);
-  return repository.getJobPostings(status: status);
+  return repository.getJobPostings(
+    status: filter?.status,
+    department: filter?.department,
+  );
 });
 
 final jobPostingDetailProvider =
@@ -121,6 +137,7 @@ final applicationsProvider =
   return repository.getApplications(
     status: filter?.status,
     jobPostingId: filter?.jobPostingId,
+    department: filter?.department,
   );
 });
 

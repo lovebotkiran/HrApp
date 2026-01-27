@@ -101,7 +101,7 @@ class _CreateInterviewScreenState extends ConsumerState<CreateInterviewScreen> {
             const SnackBar(content: Text('Interview scheduled successfully')),
           );
           Navigator.pop(context);
-          ref.refresh(interviewsProvider(null));
+          ref.invalidate(interviewsProvider);
         }
       } catch (e) {
         if (mounted) {

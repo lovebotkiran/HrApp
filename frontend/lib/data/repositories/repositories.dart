@@ -2,6 +2,7 @@ import '../datasources/api_client.dart';
 import '../models/job_requisition.dart';
 import '../models/candidate.dart';
 import '../models/interview.dart';
+import '../models/department_skill.dart';
 import 'package:agentichr_frontend/data/models/offer.dart';
 import 'package:dio/dio.dart';
 import '../../core/services/token_storage.dart';
@@ -16,9 +17,14 @@ class JobRequisitionRepository {
     int limit = 100,
     String? status,
     String? search,
+    String? department,
   }) =>
       _apiClient.getRequisitions(
-          skip: skip, limit: limit, status: status, search: search);
+          skip: skip,
+          limit: limit,
+          status: status,
+          search: search,
+          department: department);
 
   Future<JobRequisition> createRequisition(Map<String, dynamic> data) =>
       _apiClient.createRequisition(data);
@@ -34,9 +40,25 @@ class JobRequisitionRepository {
           String id, Map<String, dynamic> data) =>
       _apiClient.approveRequisition(id, data);
 
-  Future<void> shareOnLinkedIn(String id) => _apiClient.shareToLinkedIn(id);
+  Future<Map<String, dynamic>> shareOnLinkedIn(String id) async {
+    final response = await _apiClient.shareToLinkedIn(id);
+    return response.data as Map<String, dynamic>;
+  }
 
   Future<void> deleteRequisition(String id) => _apiClient.deleteRequisition(id);
+
+  Future<List<String>> getDepartments() => _apiClient.getDepartments();
+
+  Future<List<String>> getDepartmentSkills(String department) async {
+    final response = await _apiClient.getDepartmentSkills(department);
+    return response.map((DepartmentSkill e) => e.skillName).toList();
+  }
+
+  Future<void> addDepartmentSkill(String department, String skillName) =>
+      _apiClient.addDepartmentSkill({
+        'department': department,
+        'skill_name': skillName,
+      });
 }
 
 class AuthRepository {
@@ -145,9 +167,14 @@ class JobPostingRepository {
     int limit = 100,
     String? status,
     String? search,
+    String? department,
   }) async {
     final response = await _apiClient.getJobPostings(
-        skip: skip, limit: limit, status: status, search: search);
+        skip: skip,
+        limit: limit,
+        status: status,
+        search: search,
+        department: department);
     return List<Map<String, dynamic>>.from(response.data as List);
   }
 
@@ -175,6 +202,16 @@ class JobPostingRepository {
     final response = await _apiClient.publishJobPosting(id, platforms);
     return response.data as Map<String, dynamic>;
   }
+
+  Future<Map<String, dynamic>> updateJobPostingStatus(
+      String id, String status) async {
+    final response =
+        await _apiClient.updateJobPostingStatus(id, {'status': status});
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<void> shareJobPostingOnLinkedIn(String id) =>
+      _apiClient.shareJobPostingToLinkedIn(id);
 }
 
 class ApplicationRepository {
@@ -187,9 +224,14 @@ class ApplicationRepository {
     int limit = 100,
     String? status,
     String? jobPostingId,
+    String? department,
   }) async {
     final response = await _apiClient.getApplications(
-        skip: skip, limit: limit, status: status, jobPostingId: jobPostingId);
+        skip: skip,
+        limit: limit,
+        status: status,
+        jobPostingId: jobPostingId,
+        department: department);
     return List<Map<String, dynamic>>.from(response.data as List);
   }
 
@@ -215,9 +257,10 @@ class ApplicationRepository {
     return response.data as Map<String, dynamic>;
   }
 
-  Future<Map<String, dynamic>> rejectApplication(
-      String id, Map<String, dynamic> data) async {
-    final response = await _apiClient.rejectApplication(id, data);
+  Future<Map<String, dynamic>> rejectApplication(String id,
+      {String? reason, bool removeFromPool = false}) async {
+    final response = await _apiClient.rejectApplication(
+        id, {'reason': reason}, removeFromPool);
     return response.data as Map<String, dynamic>;
   }
 

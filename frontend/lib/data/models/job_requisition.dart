@@ -16,8 +16,8 @@ class JobRequisition {
   final int? experienceMin;
   @JsonKey(name: 'required_skills')
   final List<String>? requiredSkills;
-  @JsonKey(name: 'job_description')
   final String? jobDescription;
+  final String? location;
   @JsonKey(name: 'created_at')
   final DateTime? createdAt;
 
@@ -31,18 +31,21 @@ class JobRequisition {
     this.experienceMin,
     this.requiredSkills,
     this.jobDescription,
+    this.location,
     this.createdAt,
   });
 
-  factory JobRequisition.fromJson(Map<String, dynamic> json) => _$JobRequisitionFromJson(json);
+  factory JobRequisition.fromJson(Map<String, dynamic> json) =>
+      _$JobRequisitionFromJson(json);
   Map<String, dynamic> toJson() => _$JobRequisitionToJson(this);
 }
 
 class JobRequisitionFilter {
   final String? status;
   final String? search;
+  final String? department;
 
-  JobRequisitionFilter({this.status, this.search});
+  JobRequisitionFilter({this.status, this.search, this.department});
 
   @override
   bool operator ==(Object other) =>
@@ -50,8 +53,9 @@ class JobRequisitionFilter {
       other is JobRequisitionFilter &&
           runtimeType == other.runtimeType &&
           status == other.status &&
-          search == other.search;
+          search == other.search &&
+          department == other.department;
 
   @override
-  int get hashCode => status.hashCode ^ search.hashCode;
+  int get hashCode => status.hashCode ^ search.hashCode ^ department.hashCode;
 }

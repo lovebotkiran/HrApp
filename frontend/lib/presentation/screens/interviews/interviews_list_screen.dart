@@ -7,7 +7,8 @@ class InterviewsListScreen extends ConsumerStatefulWidget {
   const InterviewsListScreen({super.key});
 
   @override
-  ConsumerState<InterviewsListScreen> createState() => _InterviewsListScreenState();
+  ConsumerState<InterviewsListScreen> createState() =>
+      _InterviewsListScreenState();
 }
 
 class _InterviewsListScreenState extends ConsumerState<InterviewsListScreen> {
@@ -44,9 +45,11 @@ class _InterviewsListScreenState extends ConsumerState<InterviewsListScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.calendar_today_outlined, size: 64, color: AppTheme.textSecondary),
+                  Icon(Icons.calendar_today_outlined,
+                      size: 64, color: AppTheme.textSecondary),
                   const SizedBox(height: 16),
-                  Text('No interviews found', style: Theme.of(context).textTheme.titleLarge),
+                  Text('No interviews found',
+                      style: Theme.of(context).textTheme.titleLarge),
                 ],
               ),
             );
@@ -97,7 +100,8 @@ class _InterviewsListScreenState extends ConsumerState<InterviewsListScreen> {
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            const Icon(Icons.star, size: 16, color: AppTheme.warningColor),
+                            const Icon(Icons.star,
+                                size: 16, color: AppTheme.warningColor),
                             const SizedBox(width: 4),
                             Text('${interview.rating}/5'),
                           ],
@@ -121,10 +125,11 @@ class _InterviewsListScreenState extends ConsumerState<InterviewsListScreen> {
             children: [
               Icon(Icons.error_outline, size: 64, color: AppTheme.errorColor),
               const SizedBox(height: 16),
-              Text('Error loading interviews', style: Theme.of(context).textTheme.titleLarge),
+              Text('Error loading interviews',
+                  style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 16),
               ElevatedButton.icon(
-                onPressed: () => ref.refresh(interviewsProvider(_selectedStatus)),
+                onPressed: () => ref.invalidate(interviewsProvider),
                 icon: const Icon(Icons.refresh),
                 label: const Text('Retry'),
               ),
@@ -133,8 +138,9 @@ class _InterviewsListScreenState extends ConsumerState<InterviewsListScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.pushNamed(context, '/interviews/create');
+        onPressed: () async {
+          await Navigator.pushNamed(context, '/interviews/create');
+          ref.invalidate(interviewsProvider);
         },
         icon: const Icon(Icons.add),
         label: const Text('Schedule Interview'),

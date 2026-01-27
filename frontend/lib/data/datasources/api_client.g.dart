@@ -149,6 +149,33 @@ class _ApiClient implements ApiClient {
   }
 
   @override
+  Future<List<String>> getDepartments() async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<List<String>>(
+      Options(method: 'GET', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/job-requisitions/departments',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<List<dynamic>>(_options);
+    late List<String> _value;
+    try {
+      _value = _result.data!.cast<String>();
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    return _value;
+  }
+
+  @override
   Future<JobRequisition> getRequisition(String id) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
@@ -334,11 +361,71 @@ class _ApiClient implements ApiClient {
   }
 
   @override
+  Future<List<DepartmentSkill>> getDepartmentSkills(String department) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<List<DepartmentSkill>>(
+      Options(method: 'GET', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/job-requisitions/skills/${department}',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<List<dynamic>>(_options);
+    late List<DepartmentSkill> _value;
+    try {
+      _value = _result.data!
+          .map(
+            (dynamic i) => DepartmentSkill.fromJson(i as Map<String, dynamic>),
+          )
+          .toList();
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    return _value;
+  }
+
+  @override
+  Future<DepartmentSkill> addDepartmentSkill(Map<String, dynamic> data) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    final _data = <String, dynamic>{};
+    _data.addAll(data);
+    final _options = _setStreamType<DepartmentSkill>(
+      Options(method: 'POST', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/job-requisitions/skills',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
+    late DepartmentSkill _value;
+    try {
+      _value = DepartmentSkill.fromJson(_result.data!);
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    return _value;
+  }
+
+  @override
   Future<HttpResponse<dynamic>> getJobPostings({
     int skip = 0,
     int limit = 100,
     String? status,
     String? search,
+    String? department,
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -346,6 +433,7 @@ class _ApiClient implements ApiClient {
       r'limit': limit,
       r'status': status,
       r'search': search,
+      r'department': department,
     };
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
@@ -495,6 +583,54 @@ class _ApiClient implements ApiClient {
           .compose(
             _dio.options,
             '/job-postings/${id}/expire',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch(_options);
+    final _value = _result.data;
+    final httpResponse = HttpResponse(_value, _result);
+    return httpResponse;
+  }
+
+  @override
+  Future<HttpResponse<dynamic>> updateJobPostingStatus(
+    String id,
+    Map<String, dynamic> status,
+  ) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    final _data = <String, dynamic>{};
+    _data.addAll(status);
+    final _options = _setStreamType<HttpResponse<dynamic>>(
+      Options(method: 'PUT', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/job-postings/${id}/status',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch(_options);
+    final _value = _result.data;
+    final httpResponse = HttpResponse(_value, _result);
+    return httpResponse;
+  }
+
+  @override
+  Future<HttpResponse<dynamic>> shareJobPostingToLinkedIn(String id) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<HttpResponse<dynamic>>(
+      Options(method: 'POST', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/job-postings/${id}/share-linkedin',
             queryParameters: queryParameters,
             data: _data,
           )
@@ -732,6 +868,7 @@ class _ApiClient implements ApiClient {
     int limit = 100,
     String? status,
     String? jobPostingId,
+    String? department,
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -739,6 +876,7 @@ class _ApiClient implements ApiClient {
       r'limit': limit,
       r'status': status,
       r'job_posting_id': jobPostingId,
+      r'department': department,
     };
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
@@ -858,9 +996,13 @@ class _ApiClient implements ApiClient {
   Future<HttpResponse<dynamic>> rejectApplication(
     String id,
     Map<String, dynamic> data,
+    bool? removeFromPool,
   ) async {
     final _extra = <String, dynamic>{};
-    final queryParameters = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{
+      r'remove_from_pool': removeFromPool,
+    };
+    queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     final _data = <String, dynamic>{};
     _data.addAll(data);

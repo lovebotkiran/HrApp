@@ -38,6 +38,7 @@ Candidate _$CandidateFromJson(Map<String, dynamic> json) => Candidate(
           : DateTime.parse(json['created_at'] as String),
       isBlacklisted: json['is_blacklisted'] as bool?,
       blacklistReason: json['blacklist_reason'] as String?,
+      isActive: json['is_active'] as bool?,
     );
 
 Map<String, dynamic> _$CandidateToJson(Candidate instance) => <String, dynamic>{
@@ -64,4 +65,5 @@ Map<String, dynamic> _$CandidateToJson(Candidate instance) => <String, dynamic>{
       'created_at': instance.createdAt?.toIso8601String(),
       'is_blacklisted': instance.isBlacklisted,
       'blacklist_reason': instance.blacklistReason,
+      'is_active': instance.isActive,
     };

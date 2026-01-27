@@ -3,9 +3,14 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
 import uuid
+import logging
+
+logger = logging.getLogger(__name__)
 
 from infrastructure.database.connection import get_db
-from infrastructure.database.models import User, JobRequisition, JobRequisitionApproval
+from infrastructure.database.models import (
+    User, JobRequisition, JobRequisitionApproval, DepartmentSkill
+)
 from infrastructure.security.auth import get_current_user
 from application.schemas import (
     JobRequisitionCreate,
@@ -13,7 +18,9 @@ from application.schemas import (
     JobRequisitionResponse,
     JobRequisitionApprovalRequest,
     MessageResponse,
-    PaginatedResponse
+    PaginatedResponse,
+    DepartmentSkillCreate,
+    DepartmentSkillResponse
 )
 from core.config import settings
 from application.services.ai_service import AIService
@@ -113,6 +120,19 @@ async def list_job_requisitions(
     # Sort by created_at descending
     requisitions = query.order_by(JobRequisition.created_at.desc()).offset(skip).limit(limit).all()
     return requisitions
+
+
+@router.get("/departments", response_model=List[str])
+async def list_departments(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    List all unique departments from job requisitions.
+    """
+    departments = db.query(JobRequisition.department).distinct().all()
+    # departments is a list of tuples like [('Engineering',), ('Product',)]
+    return [d[0] for d in departments if d[0]]
 
 
 @router.get("/{requisition_id}", response_model=JobRequisitionResponse)
@@ -320,7 +340,7 @@ async def approve_job_requisition(
                 next_approval.status = "pending"
                 db.commit()
                 approval = next_approval
-
+    
     if not approval and requisition.status != "approved":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -457,13 +477,13 @@ async def share_requisition_linkedin(
     if not requisition.job_description:
          raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Job requisition must have a description to be shared"
+            detail="Job Requisition Job Description (JD) is missing. Please generate the JD before sharing."
         )
 
     if not settings.LINKEDIN_ENABLED:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="LinkedIn sharing is currently disabled in settings"
+            detail="LinkedIn sharing is currently DISABLED in the system settings (.env)."
         )
         
     # Find associated Job Posting to get the ID for the URL
@@ -476,26 +496,109 @@ async def share_requisition_linkedin(
     target_id = posting.id if posting else requisition.id
 
     # Construct apply URL matching frontend route /apply/{id}
-    # Note: Using hash routing if applicable, e.g. /#/apply/
-    # If settings.FRONTEND_URL includes trailing slash, handle it
+    # Prefer clean path (no hash) to improve compatibility when sharing to external services
     base_url = settings.FRONTEND_URL.rstrip('/')
-    apply_url = f"{base_url}/#/apply/{target_id}"
+    apply_url = f"{base_url}/apply/{target_id}"
     
-    result = await linkedin_service.share_job(
-        title=requisition.title,
-        description=requisition.job_description,
-        apply_url=apply_url
-    )
+    # Check for company logo if exists
+    import os
+    logo_path = os.path.join(os.getcwd(), "assets", "logos", "logo.png")
+    if not os.path.exists(logo_path):
+        logo_path = None
+
+    # Generate AI structured content for the professional image
+    ai_summary = await ai_service.summarize_jd_for_image(requisition.job_description)
+    poster_title = ai_summary.get("job_title", requisition.title)
+    highlights = ai_summary.get("requirements", [])
+
+    # Combine JD fields into a robust "Full" description
+    def clean_text(text):
+        if not text: return ""
+        # Filter out non-printable characters that might break API/UI
+        return "".join(c for c in text if c.isprintable() or c in "\n\r\t")
+
+    full_description = clean_text(requisition.job_description)
+    jd_lower = full_description.lower()
+    
+    if requisition.responsibilities:
+        resp = clean_text(requisition.responsibilities)
+        if resp.lower() not in jd_lower:
+            full_description += f"\n\n# Key Responsibilities:\n{resp}"
+            
+    if requisition.benefits:
+        ben = clean_text(requisition.benefits)
+        if ben.lower() not in jd_lower:
+            full_description += f"\n\n# What We Offer:\n{ben}"
+            
+    logger.info(f"Final description prepared for LinkedIn. Total chars: {len(full_description)}")
+        
+    try:
+        result = await linkedin_service.share_job(
+            title=poster_title,
+            description=full_description,
+            apply_url=apply_url,
+            generate_image=True, 
+            logo_path=logo_path,
+            highlights=highlights
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error in LinkedIn sharing flow: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal error during LinkedIn sharing: {str(e)}"
+        )
     
     if not result.get("success"):
         # If we have a specific status code from LinkedIn (like 401), use it
         error_status = result.get("status_code", status.HTTP_500_INTERNAL_SERVER_ERROR)
+        error_msg = result.get("message", "Failed to share to LinkedIn")
+        
         raise HTTPException(
             status_code=error_status,
-            detail=result.get("message", "Failed to share to LinkedIn")
+            detail=error_msg
         )
         
     return {
-        "message": "Successfully shared to LinkedIn",
-        "success": True
+        "message": result.get("message", "Successfully shared to LinkedIn"),
+        "success": True,
+        "detail": result.get("data")
     }
+
+
+@router.get("/skills/{department}", response_model=List[DepartmentSkillResponse])
+async def get_department_skills(
+    department: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Get all skills for a specific department.
+    """
+    skills = db.query(DepartmentSkill).filter(
+        DepartmentSkill.department == department
+    ).all()
+    return skills
+
+
+@router.post("/skills", response_model=DepartmentSkillResponse)
+async def add_department_skill(
+    skill_data: DepartmentSkillCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Add a new skill to a department.
+    """
+    # Check for duplicate
+    existing = db.query(DepartmentSkill).filter(
+        DepartmentSkill.department == skill_data.department,
+        DepartmentSkill.skill_name == skill_data.skill_name
+    ).first()
+    
+    if existing:
+        return existing
+        
+    new_skill = DepartmentSkill(**skill_data.dict())
+    db.add(new_skill)
+    db.commit()
+    db.refresh(new_skill)
+    return new_skill

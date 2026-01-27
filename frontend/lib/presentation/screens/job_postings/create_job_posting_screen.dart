@@ -103,7 +103,7 @@ class _CreateJobPostingScreenState
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _selectedEmploymentType,
+                initialValue: _selectedEmploymentType,
                 decoration: const InputDecoration(
                   labelText: 'Employment Type',
                   border: OutlineInputBorder(),

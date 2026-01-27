@@ -1,8 +1,12 @@
-from sqlalchemy import Column, String, Boolean, Integer, DECIMAL, TIMESTAMP, Text, Date, ForeignKey, ARRAY, JSON, CheckConstraint
+from sqlalchemy import (
+    Column, String, Boolean, Integer, DECIMAL, TIMESTAMP, Text, 
+    Date, ForeignKey, ARRAY, JSON, CheckConstraint, UniqueConstraint
+)
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import uuid
+from datetime import datetime
 from infrastructure.database.connection import Base
 
 
@@ -143,9 +147,23 @@ class JobPosting(Base):
     is_active = Column(Boolean, default=True)
     published_at = Column(TIMESTAMP)
     expires_at = Column(TIMESTAMP)
+    status_state = Column(String(50), default="Draft", index=True)
     views_count = Column(Integer, default=0)
     applications_count = Column(Integer, default=0)
     created_at = Column(TIMESTAMP, server_default=func.now())
+    
+    @property
+    def status(self):
+        # Override with manual status if it's set to a terminal state
+        if self.status_state in ["Cancelled", "Rejected", "Expired"]:
+            return self.status_state
+            
+        now = datetime.utcnow()
+        if self.expires_at and self.expires_at < now:
+            return "Expired"
+        if not self.is_active:
+            return "Draft"
+        return "Active"
     
     # Relationships
     requisition = relationship("JobRequisition", back_populates="job_postings")
@@ -187,6 +205,12 @@ class Candidate(Base):
     highest_education = Column(String(200))
     resume_url = Column(String(500))
     resume_parsed_data = Column(JSONB)
+    skills = Column(ARRAY(Text))
+    certifications = Column(ARRAY(Text))
+    languages = Column(ARRAY(Text))
+    is_blacklisted = Column(Boolean, default=False, index=True)
+    is_active = Column(Boolean, default=True, index=True)
+    blacklist_reason = Column(Text)
     linkedin_url = Column(String(500))
     portfolio_url = Column(String(500))
     skills = Column(ARRAY(String))
@@ -454,13 +478,7 @@ class DataRetentionPolicy(Base):
     retention_period_days = Column(Integer, nullable=False)
     auto_delete = Column(Boolean, default=True)
     updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
-
-
-class CandidateSource(Base):
-    __tablename__ = "candidate_sources"
     
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    source_name = Column(String(100), unique=True, nullable=False)
-    total_applications = Column(Integer, default=0)
-    total_hires = Column(Integer, default=0)
-    conversion_rate = Column(DECIMAL(5, 2), default=0.00)
+    # Relationships
+    user = relationship("User")
+    candidate = relationship("Candidate")

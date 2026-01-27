@@ -44,6 +44,8 @@ class Candidate {
   final bool? isBlacklisted;
   @JsonKey(name: 'blacklist_reason')
   final String? blacklistReason;
+  @JsonKey(name: 'is_active')
+  final bool? isActive;
 
   Candidate({
     this.id,
@@ -69,6 +71,7 @@ class Candidate {
     this.createdAt,
     this.isBlacklisted,
     this.blacklistReason,
+    this.isActive,
   });
 
   static double? _parseDecimal(dynamic value) {

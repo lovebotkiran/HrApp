@@ -16,7 +16,12 @@ class AIService:
         self.model_name = "llama3" 
         self._is_available = None # Lazy check
         try:
-            self.llm = Ollama(base_url=self.ollama_base_url, model=self.model_name)
+            self.llm = Ollama(
+            base_url=self.ollama_base_url, 
+            model=self.model_name,
+            num_predict=4096,
+            num_ctx=8192
+        )
         except Exception as e:
             logger.warning(f"Failed to initialize Ollama LLM: {e}")
             self.llm = None
@@ -139,8 +144,30 @@ class AIService:
         4. # What We Offer
         
         Tone: Professional, engaging, and modern.
+        
+        IMPORTANT: Return ONLY the content of the job description. Do NOT include any introductory text (like "Here is the JD") or concluding notes. Start directly with the first section header.
         """
-        return self.llm.invoke(prompt)
+        response = self.llm.invoke(prompt)
+        
+        # Post-processing to ensure no filler remains if the LLM slips up
+        # We expect the first line to start with '#'
+        lines = response.strip().split('\n')
+        start_index = 0
+        for i, line in enumerate(lines):
+            if line.strip().startswith('# '):
+                start_index = i
+                break
+        
+        # If we found a header, assume content starts there. 
+        # Also strip trailing notes (often starting with "Note:" or "Hope this helps")
+        cleaned_lines = lines[start_index:]
+        final_content = []
+        for line in reversed(cleaned_lines):
+            if line.strip().lower().startswith("note:") or "let me know" in line.lower():
+                continue
+            final_content.append(line)
+            
+        return '\n'.join(reversed(final_content)).strip()
 
     async def rank_candidate(self, job_description: str, candidate_profile_json: Dict) -> Dict[str, Any]:
         """Compares candidate profile against JD and returns a score."""
@@ -176,3 +203,34 @@ class AIService:
         except Exception as e:
             logger.error(f"Error ranking candidate: {e}")
             return {"score": 0, "reasoning": f"AI Error: {e}"}
+
+    async def summarize_jd_for_image(self, job_description: str) -> Dict[str, Any]:
+        """Summarizes a JD into a structured format for a professional hiring image."""
+        prompt = f"""
+        Analyze the following Job Description and extract two things:
+        1. A punchy Job Title (max 3 words).
+        2. Exactly 5 clear, descriptive requirements (8-10 words EACH).
+        
+        CRITICAL: Requirements should be clear and professional. They will be wrapped across two lines on the poster. 
+        Example requirements: "Expertise in Python, Django and REST API development", "5+ years of experience in enterprise IT support", "Strong knowledge of AWS Cloud and DevOps practices".
+        
+        Job Description:
+        {job_description[:2000]}
+        
+        Return ONLY a JSON object with this structure:
+        {{
+            "job_title": "STRING",
+            "requirements": ["STRING", "STRING", "STRING", "STRING"]
+        }}
+        Do NOT include any markdown or explanatory text.
+        """
+        try:
+            response = self.llm.invoke(prompt)
+            start_idx = response.find('{')
+            end_idx = response.rfind('}') + 1
+            if start_idx != -1:
+                return json.loads(response[start_idx:end_idx])
+            return {"job_title": "We Are Hiring", "requirements": []}
+        except Exception as e:
+            logger.error(f"Error summarizing JD for image: {e}")
+            return {"job_title": "We Are Hiring", "requirements": []}

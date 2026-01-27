@@ -7,7 +7,7 @@ import logging
 
 from infrastructure.database.connection import get_db
 from infrastructure.database.models import (
-    Application, Candidate, JobPosting, User
+    Application, Candidate, JobPosting, User, JobRequisition
 )
 from infrastructure.security.auth import get_current_user
 from application.schemas import (
@@ -42,6 +42,14 @@ async def submit_application(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Job posting not found or inactive"
+        )
+    
+    # Check if expired
+    now = datetime.utcnow()
+    if (job_posting.expires_at and job_posting.expires_at < now) or job_posting.status_state == 'Expired':
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot apply to an expired job posting"
         )
     
     # Create or get candidate
@@ -117,6 +125,7 @@ async def list_applications(
     candidate_id: Optional[str] = None,
     source: Optional[str] = None,
     min_match_score: Optional[float] = None,
+    department: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -140,6 +149,8 @@ async def list_applications(
         query = query.filter(Application.source == source)
     if min_match_score:
         query = query.filter(Application.ai_match_score >= min_match_score)
+    if department:
+        query = query.join(Application.job_posting).join(JobPosting.requisition).filter(JobRequisition.department == department)
     
     applications = query.order_by(Application.applied_at.desc()).offset(skip).limit(limit).all()
     return applications
@@ -186,7 +197,7 @@ async def update_application_status(
     
     valid_statuses = [
         "applied", "screening", "shortlisted", "interview",
-        "selected", "offered", "rejected", "withdrawn"
+        "selected", "offered", "rejected", "withdrawn", "suggested"
     ]
     
     if status_data.status not in valid_statuses:
@@ -244,11 +255,13 @@ async def shortlist_application(
 async def reject_application(
     application_id: str,
     reason: Optional[str] = None,
+    remove_from_pool: bool = Query(False),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """
     Reject an application.
+    If remove_from_pool is True, the candidate is marked as inactive for future rankings.
     """
     application = db.query(Application).filter(Application.id == application_id).first()
     
@@ -259,6 +272,11 @@ async def reject_application(
         )
     
     application.status = "rejected"
+    
+    if remove_from_pool and application.candidate:
+        application.candidate.is_active = False
+        logger.info(f"Candidate {application.candidate_id} marked as inactive/removed from local pool.")
+
     db.commit()
     
     # Send rejection email to candidate
@@ -266,7 +284,7 @@ async def reject_application(
     # TODO: Implement real email service
     
     return {
-        "message": "Application rejected",
+        "message": "Application rejected" + (" and candidate removed from pool" if remove_from_pool else ""),
         "success": True
     }
 
@@ -390,7 +408,8 @@ async def rank_applications_by_job_posting(
 ):
     """
     Rank all applications for a specific job posting using AI.
-    This will parse resumes and calculate match scores for all candidates.
+    This also scans all locally stored candidates (active and not blacklisted) 
+    and creates 'suggested' applications for them if they haven't applied.
     """
     # Verify job posting exists
     job_posting = db.query(JobPosting).filter(JobPosting.id == job_posting_id).first()
@@ -407,16 +426,47 @@ async def rank_applications_by_job_posting(
             detail="Job posting must have a description to rank candidates"
         )
     
-    # Get all applications for this job posting
+    # 1. Find all active and not blacklisted candidates
+    all_candidates = db.query(Candidate).filter(
+        Candidate.is_active == True,
+        Candidate.is_blacklisted == False
+    ).all()
+    
+    suggested_count = 0
+    for candidate in all_candidates:
+        # Check if they already have an application for this job
+        existing_app = db.query(Application).filter(
+            Application.job_posting_id == job_posting_id,
+            Application.candidate_id == candidate.id
+        ).first()
+        
+        if not existing_app:
+            # Create a 'suggested' application from local pool
+            app_number = f"SUG-{datetime.now().strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
+            new_app = Application(
+                application_number=app_number,
+                job_posting_id=job_posting_id,
+                candidate_id=candidate.id,
+                source="local_pool",
+                status="suggested"
+            )
+            db.add(new_app)
+            suggested_count += 1
+    
+    if suggested_count > 0:
+        db.flush() # Ensure suggested apps have IDs for ranking
+        logger.info(f"Added {suggested_count} suggested candidates from local pool for job {job_posting_id}")
+
+    # 2. Get all applications for this job posting (now including suggested ones)
     applications = db.query(Application).filter(
         Application.job_posting_id == job_posting_id
     ).all()
     
     if not applications:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No applications found for this job posting"
-        )
+        return {
+            "message": "No candidates found to rank",
+            "success": True
+        }
     
     ranked_count = 0
     skipped_count = 0
@@ -426,9 +476,11 @@ async def rank_applications_by_job_posting(
             # Parse resume if not already parsed
             if application.candidate and application.candidate.resume_url:
                 if not application.candidate.resume_parsed_data:
+                    # Determine mime type from extension
+                    mime_type = "application/pdf" if application.candidate.resume_url.lower().endswith(".pdf") else "text/plain"
                     parsed_data = await ai_service.parse_resume(
                         application.candidate.resume_url,
-                        "application/pdf"
+                        mime_type
                     )
                     
                     if "error" not in parsed_data:
@@ -457,7 +509,7 @@ async def rank_applications_by_job_posting(
     db.commit()
     
     return {
-        "message": f"Ranked {ranked_count} applications successfully. Skipped {skipped_count}.",
+        "message": f"Ranked {ranked_count} candidates successfully. Added {suggested_count} from local pool. Skipped {skipped_count}.",
         "success": True
     }
 
@@ -489,9 +541,10 @@ async def rank_all_applications(
                 continue
                 
             # Trigger ranking
+            candidate_data = app.candidate.resume_parsed_data if (app.candidate and app.candidate.resume_parsed_data) else {}
             result = await ai_service.rank_candidate(
                 job_description=app.job_posting.description,
-                candidate_profile_json=app.candidate.resume_parsed_data if app.candidate.resume_parsed_data else {}
+                candidate_profile_json=candidate_data
             )
             
             app.ai_match_score = result.get("score", 0)

@@ -50,6 +50,25 @@ class JobPosting {
     this.createdAt,
   });
 
-  factory JobPosting.fromJson(Map<String, dynamic> json) => _$JobPostingFromJson(json);
+  factory JobPosting.fromJson(Map<String, dynamic> json) =>
+      _$JobPostingFromJson(json);
   Map<String, dynamic> toJson() => _$JobPostingToJson(this);
+}
+
+class JobPostingFilter {
+  final String? status;
+  final String? department;
+
+  JobPostingFilter({this.status, this.department});
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is JobPostingFilter &&
+          runtimeType == other.runtimeType &&
+          status == other.status &&
+          department == other.department;
+
+  @override
+  int get hashCode => status.hashCode ^ department.hashCode;
 }

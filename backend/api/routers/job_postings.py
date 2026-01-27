@@ -13,9 +13,78 @@ from application.schemas import (
     MessageResponse
 )
 from application.services.ai_service import AIService
+from application.services.linkedin_service import LinkedInService
+from core.config import settings
 
 router = APIRouter()
 ai_service = AIService()
+linkedin_service = LinkedInService()
+
+
+@router.post("/{posting_id}/share-linkedin", response_model=MessageResponse)
+async def share_job_posting_linkedin(
+    posting_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Share a job posting to LinkedIn with AI-generated images and highlights.
+    """
+    posting = db.query(JobPosting).filter(JobPosting.id == posting_id).first()
+    
+    if not posting:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job posting not found"
+        )
+    
+    if not posting.is_active and posting.status_state != "Active":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Can only share active job postings"
+        )
+
+    if not settings.LINKEDIN_ENABLED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="LinkedIn sharing is currently disabled in settings"
+        )
+
+    # Construct apply URL matching frontend route /apply/{id}
+    base_url = settings.FRONTEND_URL.rstrip('/')
+    apply_url = f"{base_url}/apply/{posting.id}"
+    
+    # Check for company logo if exists
+    import os
+    logo_path = os.path.join(os.getcwd(), "assets", "logos", "logo.png")
+    if not os.path.exists(logo_path):
+        logo_path = None
+
+    # Generate AI structured content for the professional image
+    ai_summary = await ai_service.summarize_jd_for_image(posting.description)
+    poster_title = ai_summary.get("job_title", posting.title)
+    highlights = ai_summary.get("requirements", [])
+
+    result = await linkedin_service.share_job(
+        title=poster_title,
+        description=posting.description,
+        apply_url=apply_url,
+        generate_image=True,
+        logo_path=logo_path,
+        highlights=highlights
+    )
+    
+    if not result.get("success"):
+        error_status = result.get("status_code", status.HTTP_500_INTERNAL_SERVER_ERROR)
+        raise HTTPException(
+            status_code=error_status,
+            detail=result.get("message", "Failed to share to LinkedIn")
+        )
+        
+    return {
+        "message": "Successfully shared job posting to LinkedIn",
+        "success": True
+    }
 
 
 @router.post("/", response_model=JobPostingResponse, status_code=status.HTTP_201_CREATED)
@@ -66,31 +135,107 @@ async def list_job_postings(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=100),
     is_active: Optional[bool] = None,
+    status: Optional[str] = None,
     employment_type: Optional[str] = None,
     location: Optional[str] = None,
+    department: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """
     List all job postings (public endpoint).
-    Filter by active status, employment type, and location.
+    Filter by status (Active, Draft, Expired), attributes and department.
     """
     query = db.query(JobPosting)
+    now = datetime.utcnow()
     
     # Apply filters
+    if status:
+        if status == 'Expired':
+            # Show if expires_at in past OR status_state is Expired
+            query = query.filter(
+                (JobPosting.expires_at < now) | (JobPosting.status_state == 'Expired')
+            )
+        elif status == 'Draft':
+            # Draft: Not active and not expired/terminal
+            query = query.filter(JobPosting.is_active == False)
+            query = query.filter(
+                (JobPosting.expires_at.is_(None)) | (JobPosting.expires_at > now)
+            )
+            query = query.filter(
+                (JobPosting.status_state.is_(None)) | (JobPosting.status_state.notin_(['Cancelled', 'Rejected', 'Expired']))
+            )
+        elif status == 'Active':
+            # Active: Is active and not expired/terminal
+            query = query.filter(JobPosting.is_active == True)
+            query = query.filter(
+                (JobPosting.expires_at.is_(None)) | (JobPosting.expires_at > now)
+            )
+            query = query.filter(
+                (JobPosting.status_state.is_(None)) | (JobPosting.status_state.notin_(['Cancelled', 'Rejected', 'Expired']))
+            )
+        elif status in ['Cancelled', 'Rejected']:
+            query = query.filter(JobPosting.status_state == status)
+    else:
+        # Default 'All' view: Exclude expired and cancelled/rejected unless explicitly asked
+        query = query.filter(
+            (JobPosting.expires_at.is_(None)) | (JobPosting.expires_at > now)
+        )
+        query = query.filter(
+            (JobPosting.status_state.is_(None)) | (JobPosting.status_state.notin_(['Cancelled', 'Rejected', 'Expired']))
+        )
+        
     if is_active is not None:
         query = query.filter(JobPosting.is_active == is_active)
     if employment_type:
         query = query.filter(JobPosting.employment_type == employment_type)
     if location:
         query = query.filter(JobPosting.location.ilike(f"%{location}%"))
-    
-    # Filter out expired postings
-    query = query.filter(
-        (JobPosting.expires_at.is_(None)) | (JobPosting.expires_at > datetime.utcnow())
-    )
+        
+    if department:
+        query = query.join(JobRequisition).filter(JobRequisition.department == department)
     
     postings = query.order_by(JobPosting.created_at.desc()).offset(skip).limit(limit).all()
     return postings
+
+
+@router.put("/{posting_id}/status", response_model=JobPostingResponse)
+async def update_job_posting_status(
+    posting_id: str,
+    status_update: dict,  # {"status": "Active" | "Draft" | "Cancelled" | "Rejected"}
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Update job posting status explicitly.
+    """
+    posting = db.query(JobPosting).filter(JobPosting.id == posting_id).first()
+    
+    if not posting:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job posting not found"
+        )
+    
+    new_status = status_update.get("status")
+    if new_status not in ["Active", "Draft", "Cancelled", "Rejected", "Expired"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid status. Must be one of Active, Draft, Cancelled, Rejected, Expired."
+        )
+    
+    posting.status_state = new_status
+    
+    if new_status == "Active":
+        posting.is_active = True
+        if not posting.published_at:
+            posting.published_at = datetime.utcnow()
+    elif new_status in ["Draft", "Cancelled", "Rejected", "Expired"]:
+        posting.is_active = False
+        
+    db.commit()
+    db.refresh(posting)
+    
+    return posting
 
 
 @router.get("/{posting_id}", response_model=JobPostingResponse)
@@ -197,6 +342,7 @@ async def publish_job_posting(
         posting.published_at = datetime.utcnow()
     
     posting.is_active = True
+    posting.status_state = "Active"
     
     success_count = 0 
 
@@ -270,6 +416,7 @@ async def expire_job_posting(
     
     posting.expires_at = datetime.utcnow()
     posting.is_active = False
+    posting.status_state = "Expired"
     db.commit()
     
     return {
