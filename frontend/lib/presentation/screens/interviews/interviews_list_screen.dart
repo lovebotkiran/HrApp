@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:agentichr_frontend/core/theme/app_theme.dart';
 import 'package:agentichr_frontend/domain/providers/providers.dart';
 
@@ -62,57 +63,142 @@ class _InterviewsListScreenState extends ConsumerState<InterviewsListScreen> {
               final interview = interviews[index];
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.all(16),
-                  leading: Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: _getStatusColor(interview.status),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      _getInterviewIcon(interview.interviewType),
-                      color: AppTheme.primaryColor,
-                    ),
-                  ),
-                  title: Text(interview.interviewType),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          const Icon(Icons.access_time, size: 16),
-                          const SizedBox(width: 4),
-                          Text(_formatDateTime(interview.scheduledTime)),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          const Icon(Icons.timer, size: 16),
-                          const SizedBox(width: 4),
-                          Text('${interview.duration} minutes'),
-                        ],
-                      ),
-                      if (interview.rating != null) ...[
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            const Icon(Icons.star,
-                                size: 16, color: AppTheme.warningColor),
-                            const SizedBox(width: 4),
-                            Text('${interview.rating}/5'),
-                          ],
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ListTile(
+                      contentPadding: const EdgeInsets.all(16),
+                      leading: Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: _getStatusColor(interview.status),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                      ],
-                    ],
-                  ),
-                  trailing: Chip(
-                    label: Text(interview.status),
-                    backgroundColor: _getStatusColor(interview.status),
-                  ),
+                        child: Icon(
+                          _getInterviewIcon(interview.interviewType),
+                          color: AppTheme.primaryColor,
+                        ),
+                      ),
+                      title: Text(interview.interviewType),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const Icon(Icons.access_time, size: 16),
+                              const SizedBox(width: 4),
+                              Text(_formatDateTime(interview.scheduledTime)),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              const Icon(Icons.timer, size: 16),
+                              const SizedBox(width: 4),
+                              Text('${interview.duration} minutes'),
+                            ],
+                          ),
+                          if (interview.rating != null) ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                const Icon(Icons.star,
+                                    size: 16, color: AppTheme.warningColor),
+                                const SizedBox(width: 4),
+                                Text('${interview.rating}/5'),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                      trailing: Chip(
+                        label: Text(interview.status),
+                        backgroundColor: _getStatusColor(interview.status),
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          if (interview.meetingLink != null &&
+                              (interview.status.toLowerCase() == 'scheduled' ||
+                                  interview.status.toLowerCase() ==
+                                      'rescheduled'))
+                            TextButton.icon(
+                              icon: const Icon(Icons.video_call),
+                              label: const Text('Join Meeting'),
+                              onPressed: () async {
+                                final url = Uri.parse(interview.meetingLink!);
+                                if (await canLaunchUrl(url)) {
+                                  await launchUrl(url);
+                                } else {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                          content: Text(
+                                              'Could not launch ${interview.meetingLink}')),
+                                    );
+                                  }
+                                }
+                              },
+                            ),
+                          const SizedBox(width: 8),
+                          if (interview.status.toLowerCase() == 'completed')
+                            TextButton.icon(
+                              icon: const Icon(Icons.rate_review),
+                              label: const Text('Feedback'),
+                              onPressed: () {
+                                // Navigate to feedback screen (placeholder)
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content:
+                                          Text('Feedback feature coming soon')),
+                                );
+                              },
+                            ),
+                          if (interview.status.toLowerCase() == 'scheduled' ||
+                              interview.status.toLowerCase() == 'rescheduled')
+                            PopupMenuButton<String>(
+                              itemBuilder: (context) => [
+                                const PopupMenuItem(
+                                  value: 'cancel',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.cancel, color: Colors.red),
+                                      SizedBox(width: 8),
+                                      Text('Cancel Interview'),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                              onSelected: (value) {
+                                if (value == 'cancel') {
+                                  // Implement cancel logic
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content:
+                                            Text('Cancel feature coming soon')),
+                                  );
+                                }
+                              },
+                              child: const Padding(
+                                padding: EdgeInsets.all(8.0),
+                                child: Row(
+                                  children: [
+                                    Text('More'),
+                                    Icon(Icons.arrow_drop_down),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               );
             },
@@ -139,7 +225,7 @@ class _InterviewsListScreenState extends ConsumerState<InterviewsListScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
-          await Navigator.pushNamed(context, '/interviews/create');
+          await Navigator.pushNamed(context, '/shortlisted-candidates');
           ref.invalidate(interviewsProvider);
         },
         icon: const Icon(Icons.add),

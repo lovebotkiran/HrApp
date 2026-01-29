@@ -170,124 +170,107 @@ class _JobPostingsListScreenState extends ConsumerState<JobPostingsListScreen> {
                         ),
                       ),
                       const Divider(height: 1),
-                      // Action Buttons & Status Selector
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                         child: Row(
                           children: [
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        RankedCandidatesScreen(
-                                      jobPostingId: posting['id'] ?? '',
-                                      jobTitle:
-                                          posting['title'] ?? 'Job Posting',
-                                    ),
-                                  ),
-                                );
-                              },
-                              icon: const Icon(Icons.analytics, size: 18),
-                              label: Text(applicationsCount > 0
-                                  ? 'Rank ($applicationsCount)'
-                                  : 'Rank Pool'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.primaryColor,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 8, horizontal: 16),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ApplicationFormScreen(
-                                      jobPosting: posting,
-                                    ),
-                                  ),
-                                );
-                              },
-                              icon: const Icon(Icons.send),
-                              label: const Text('Apply'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.primaryColor,
-                                foregroundColor: Colors.white,
-                              ),
-                            ),
-                          ),
-                          if (applicationsCount > 0) ...[
-                            const SizedBox(width: 12),
                             Expanded(
-                              child: OutlinedButton.icon(
+                              child: ElevatedButton.icon(
                                 onPressed: () {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) =>
-                                          RankedCandidatesScreen(
-                                        jobPostingId: posting['id'] ?? '',
-                                        jobTitle:
-                                            posting['title'] ?? 'Job Posting',
+                                          ApplicationFormScreen(
+                                        jobPosting: posting,
                                       ),
                                     ),
                                   );
                                 },
-                                icon: const Icon(Icons.analytics),
-                                label: Text('Rank ($applicationsCount)'),
+                                icon: const Icon(Icons.send),
+                                label: const Text('Apply'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.primaryColor,
+                                  foregroundColor: Colors.white,
+                                ),
                               ),
                             ),
-                          if (applicationsCount == 0)
-                            // Placeholder or empty if no actions
-                            const Text('No candidates yet',
-                                style: TextStyle(color: Colors.grey))
-                        ],
+                            if (applicationsCount > 0) ...[
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            RankedCandidatesScreen(
+                                          jobPostingId: posting['id'] ?? '',
+                                          jobTitle:
+                                              posting['title'] ?? 'Job Posting',
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.analytics),
+                                  label: Text('Rank ($applicationsCount)'),
+                                ),
+                              ),
+                            ] else if (applicationsCount == 0) ...[
+                              const SizedBox(width: 12),
+                              const Expanded(
+                                child: Center(
+                                  child: Text(
+                                    'No candidates yet',
+                                    style: TextStyle(
+                                        color: Colors.grey, fontSize: 12),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stack) => Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline, size: 64, color: AppTheme.errorColor),
+                const SizedBox(height: 16),
+                Text(
+                  'Error loading job postings',
+                  style: Theme.of(context).textTheme.titleLarge,
                 ),
-              );
-            },
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.error_outline, size: 64, color: AppTheme.errorColor),
-              const SizedBox(height: 16),
-              Text(
-                'Error loading job postings',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                error.toString(),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppTheme.textSecondary,
-                    ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: () =>
-                    ref.refresh(jobPostingsProvider(_selectedStatus)),
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
-              ),
-            ],
+                const SizedBox(height: 8),
+                Text(
+                  error.toString(),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppTheme.textSecondary,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () =>
+                      ref.refresh(jobPostingsProvider(JobPostingFilter(
+                    status: _selectedStatus,
+                    department: _selectedDepartment,
+                  ))),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                ),
+              ],
+            ),
           ),
         ),
       ),
-      // FloatingActionButton removed as per requirement
     );
   }
 

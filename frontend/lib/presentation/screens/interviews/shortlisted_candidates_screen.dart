@@ -8,15 +8,17 @@ class ShortlistedCandidatesScreen extends StatefulWidget {
   const ShortlistedCandidatesScreen({Key? key}) : super(key: key);
 
   @override
-  State<ShortlistedCandidatesScreen> createState() => _ShortlistedCandidatesScreenState();
+  State<ShortlistedCandidatesScreen> createState() =>
+      _ShortlistedCandidatesScreenState();
 }
 
-class _ShortlistedCandidatesScreenState extends State<ShortlistedCandidatesScreen> {
+class _ShortlistedCandidatesScreenState
+    extends State<ShortlistedCandidatesScreen> {
   late final Dio _dio;
   List<dynamic> _candidates = [];
   List<String> _departments = [];
   List<dynamic> _jobPostings = [];
-  
+
   String? _selectedDepartment;
   String? _selectedJobPostingId;
   bool _isLoading = false;
@@ -63,14 +65,14 @@ class _ShortlistedCandidatesScreenState extends State<ShortlistedCandidatesScree
     try {
       String url = '/shortlisted-candidates/';
       List<String> params = [];
-      
+
       if (_selectedDepartment != null) {
         params.add('department=$_selectedDepartment');
       }
       if (_selectedJobPostingId != null) {
         params.add('job_posting_id=$_selectedJobPostingId');
       }
-      
+
       if (params.isNotEmpty) {
         url += '?${params.join('&')}';
       }
@@ -100,11 +102,13 @@ class _ShortlistedCandidatesScreenState extends State<ShortlistedCandidatesScree
     );
   }
 
-  Future<void> _createInterview(String applicationId, String candidateName) async {
+  Future<void> _createInterview(
+      String applicationId, String candidateName) async {
     // Show dialog to select meeting platform and schedule
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (context) => _CreateInterviewDialog(candidateName: candidateName),
+      builder: (context) =>
+          _CreateInterviewDialog(candidateName: candidateName),
     );
 
     if (result == null) return;
@@ -114,8 +118,13 @@ class _ShortlistedCandidatesScreenState extends State<ShortlistedCandidatesScree
         _isLoading = true;
       });
 
+      print('Creating interview for application: $applicationId');
+      final url = '/shortlisted-candidates/$applicationId/create-interview';
+      print('Request URL: $url');
+      print('Request Data: $result');
+
       final response = await _dio.post(
-        '/shortlisted-candidates/$applicationId/create-interview',
+        url,
         data: result,
       );
 
@@ -129,6 +138,18 @@ class _ShortlistedCandidatesScreenState extends State<ShortlistedCandidatesScree
       setState(() {
         _isLoading = false;
       });
+      print('Error creating interview: $e');
+      if (e is DioException) {
+        print('Response Data: ${e.response?.data}');
+        print('Response Headers: ${e.response?.headers}');
+        print('Status Code: ${e.response?.statusCode}');
+
+        final data = e.response?.data;
+        if (data != null && data is Map && data.containsKey('detail')) {
+          _showError('Failed: ${data['detail']}');
+          return;
+        }
+      }
       _showError('Failed to create interview: $e');
     }
   }
@@ -158,13 +179,16 @@ class _ShortlistedCandidatesScreenState extends State<ShortlistedCandidatesScree
                           filled: true,
                           fillColor: Colors.white,
                         ),
-                        value: _selectedDepartment,
+                        value: _departments.contains(_selectedDepartment)
+                            ? _selectedDepartment
+                            : null,
                         items: [
-                          const DropdownMenuItem(value: null, child: Text('All Departments')),
+                          const DropdownMenuItem(
+                              value: null, child: Text('All Departments')),
                           ..._departments.map((dept) => DropdownMenuItem(
-                            value: dept,
-                            child: Text(dept),
-                          )),
+                                value: dept,
+                                child: Text(dept),
+                              )),
                         ],
                         onChanged: (value) {
                           setState(() {
@@ -185,13 +209,18 @@ class _ShortlistedCandidatesScreenState extends State<ShortlistedCandidatesScree
                           filled: true,
                           fillColor: Colors.white,
                         ),
-                        value: _selectedJobPostingId,
+                        value: _jobPostings
+                                .any((jp) => jp['id'] == _selectedJobPostingId)
+                            ? _selectedJobPostingId
+                            : null,
                         items: [
-                          const DropdownMenuItem(value: null, child: Text('All Positions')),
+                          const DropdownMenuItem(
+                              value: null, child: Text('All Positions')),
                           ..._jobPostings.map((jp) => DropdownMenuItem(
-                            value: jp['id'],
-                            child: Text('${jp['title']} (${jp['job_code']})'),
-                          )),
+                                value: jp['id'],
+                                child:
+                                    Text('${jp['title']} (${jp['job_code']})'),
+                              )),
                         ],
                         onChanged: (value) {
                           setState(() {
@@ -267,7 +296,8 @@ class _ShortlistedCandidatesScreenState extends State<ShortlistedCandidatesScree
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: Colors.orange[100],
                     borderRadius: BorderRadius.circular(12),
@@ -298,7 +328,8 @@ class _ShortlistedCandidatesScreenState extends State<ShortlistedCandidatesScree
                   const SizedBox(width: 8),
                   Text(
                     'AI Score: ${candidate['ai_match_score']}%',
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w500),
                   ),
                 ],
               ],
@@ -387,148 +418,162 @@ class _CreateInterviewDialogState extends State<_CreateInterviewDialog> {
     return AlertDialog(
       title: Text('Schedule Interview - ${widget.candidateName}'),
       content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Select Interviewers', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            if (_isLoadingUsers)
-              const LinearProgressIndicator()
-            else
-              Container(
-                height: 150,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: _users.length,
-                  itemBuilder: (context, index) {
-                    final user = _users[index];
-                    final String name = '${user['first_name']} ${user['last_name']}';
-                    final String id = user['id'];
-                    final bool isSelected = _selectedInterviewerIds.contains(id);
+        child: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Select Interviewers',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              if (_isLoadingUsers)
+                const LinearProgressIndicator()
+              else
+                Container(
+                  height: 150,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: ListView.builder(
+                    // shrinkWrap: true, // Removed to fix Intrinsic dimensions error
+                    itemCount: _users.length,
+                    itemBuilder: (context, index) {
+                      final user = _users[index];
+                      final String name =
+                          '${user['first_name']} ${user['last_name']}';
+                      final String id = user['id'];
+                      final bool isSelected =
+                          _selectedInterviewerIds.contains(id);
 
-                    return CheckboxListTile(
-                      title: Text(name),
-                      subtitle: Text(user['designation'] ?? user['department'] ?? ''),
-                      value: isSelected,
-                      dense: true,
-                      onChanged: (bool? value) {
-                        setState(() {
-                          if (value == true) {
-                            _selectedInterviewerIds.add(id);
-                          } else {
-                            _selectedInterviewerIds.remove(id);
-                          }
-                        });
+                      return CheckboxListTile(
+                        title: Text(name),
+                        subtitle: Text(
+                            user['designation'] ?? user['department'] ?? ''),
+                        value: isSelected,
+                        dense: true,
+                        onChanged: (bool? value) {
+                          setState(() {
+                            if (value == true) {
+                              _selectedInterviewerIds.add(id);
+                            } else {
+                              _selectedInterviewerIds.remove(id);
+                            }
+                          });
+                        },
+                      );
+                    },
+                  ),
+                ),
+              const SizedBox(height: 16),
+              const Text('Meeting Platform',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: _selectedPlatform,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  filled: true,
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'zoom', child: Text('Zoom')),
+                  DropdownMenuItem(
+                      value: 'teams', child: Text('Microsoft Teams')),
+                  DropdownMenuItem(value: 'both', child: Text('Both')),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _selectedPlatform = value!;
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
+              const Text('Interview Round',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              TextFormField(
+                initialValue: _roundName,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  filled: true,
+                ),
+                onChanged: (value) {
+                  _roundName = value;
+                },
+              ),
+              const SizedBox(height: 16),
+              const Text('Date & Time',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: _selectedDate,
+                          firstDate: DateTime.now(),
+                          lastDate:
+                              DateTime.now().add(const Duration(days: 365)),
+                        );
+                        if (date != null) {
+                          setState(() {
+                            _selectedDate = date;
+                          });
+                        }
                       },
-                    );
-                  },
-                ),
-              ),
-            const SizedBox(height: 16),
-            const Text('Meeting Platform', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              value: _selectedPlatform,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                filled: true,
-              ),
-              items: const [
-                DropdownMenuItem(value: 'zoom', child: Text('Zoom')),
-                DropdownMenuItem(value: 'teams', child: Text('Microsoft Teams')),
-                DropdownMenuItem(value: 'both', child: Text('Both')),
-              ],
-              onChanged: (value) {
-                setState(() {
-                  _selectedPlatform = value!;
-                });
-              },
-            ),
-            const SizedBox(height: 16),
-            const Text('Interview Round', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            TextFormField(
-              initialValue: _roundName,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                filled: true,
-              ),
-              onChanged: (value) {
-                _roundName = value;
-              },
-            ),
-            const SizedBox(height: 16),
-            const Text('Date & Time', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () async {
-                      final date = await showDatePicker(
-                        context: context,
-                        initialDate: _selectedDate,
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(const Duration(days: 365)),
-                      );
-                      if (date != null) {
-                        setState(() {
-                          _selectedDate = date;
-                        });
-                      }
-                    },
-                    icon: const Icon(Icons.calendar_today),
-                    label: Text(DateFormat('MMM dd, yyyy').format(_selectedDate)),
+                      icon: const Icon(Icons.calendar_today),
+                      label: Text(
+                          DateFormat('MMM dd, yyyy').format(_selectedDate)),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () async {
-                      final time = await showTimePicker(
-                        context: context,
-                        initialTime: _selectedTime,
-                      );
-                      if (time != null) {
-                        setState(() {
-                          _selectedTime = time;
-                        });
-                      }
-                    },
-                    icon: const Icon(Icons.access_time),
-                    label: Text(_selectedTime.format(context)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        final time = await showTimePicker(
+                          context: context,
+                          initialTime: _selectedTime,
+                        );
+                        if (time != null) {
+                          setState(() {
+                            _selectedTime = time;
+                          });
+                        }
+                      },
+                      icon: const Icon(Icons.access_time),
+                      label: Text(_selectedTime.format(context)),
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            const Text('Duration (minutes)', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<int>(
-              value: _duration,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                filled: true,
+                ],
               ),
-              items: const [
-                DropdownMenuItem(value: 30, child: Text('30 minutes')),
-                DropdownMenuItem(value: 45, child: Text('45 minutes')),
-                DropdownMenuItem(value: 60, child: Text('1 hour')),
-                DropdownMenuItem(value: 90, child: Text('1.5 hours')),
-                DropdownMenuItem(value: 120, child: Text('2 hours')),
-              ],
-              onChanged: (value) {
-                setState(() {
-                  _duration = value!;
-                });
-              },
-            ),
-          ],
+              const SizedBox(height: 16),
+              const Text('Duration (minutes)',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<int>(
+                value: _duration,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  filled: true,
+                ),
+                items: const [
+                  DropdownMenuItem(value: 30, child: Text('30 minutes')),
+                  DropdownMenuItem(value: 45, child: Text('45 minutes')),
+                  DropdownMenuItem(value: 60, child: Text('1 hour')),
+                  DropdownMenuItem(value: 90, child: Text('1.5 hours')),
+                  DropdownMenuItem(value: 120, child: Text('2 hours')),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _duration = value!;
+                  });
+                },
+              ),
+            ],
+          ),
         ),
       ),
       actions: [

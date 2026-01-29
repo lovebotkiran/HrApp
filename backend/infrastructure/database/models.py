@@ -259,6 +259,19 @@ class Application(Base):
     interviews = relationship("Interview", back_populates="application")
     offers = relationship("Offer", back_populates="application")
 
+    @property
+    def candidate_name(self):
+        if self.candidate:
+            return f"{self.candidate.first_name} {self.candidate.last_name}"
+        return None
+
+    @property
+    def job_title(self):
+        if self.job_posting:
+            return self.job_posting.title
+        return None
+
+
 
 class Interview(Base):
     __tablename__ = "interviews"
@@ -416,7 +429,7 @@ class Employee(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), unique=True)
     employee_id = Column(String(50), unique=True, nullable=False)
-    joining_date = Column(Date)
+    joined_date = Column(Date)
     department = Column(String(100))
     designation = Column(String(100))
     manager_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
@@ -478,7 +491,23 @@ class DataRetentionPolicy(Base):
     retention_period_days = Column(Integer, nullable=False)
     auto_delete = Column(Boolean, default=True)
     updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
+
+
+class BrandingTemplate(Base):
+    __tablename__ = "branding_templates"
     
-    # Relationships
-    user = relationship("User")
-    candidate = relationship("Candidate")
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(100), nullable=False)
+    template_type = Column(String(50), nullable=False)  # HIRING, WELCOME, etc.
+    file_path = Column(String(255), nullable=False)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(TIMESTAMP, server_default=func.now())
+
+class DepartmentSkill(Base):
+    __tablename__ = "department_skills"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    department = Column(String(100), nullable=False)
+    skill_name = Column(String(100), nullable=False)
+    created_at = Column(TIMESTAMP, server_default=func.now())
+

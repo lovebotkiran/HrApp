@@ -146,14 +146,6 @@ class _CandidatesListScreenState extends ConsumerState<CandidatesListScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          await Navigator.pushNamed(context, '/candidates/create');
-          ref.invalidate(candidatesProvider);
-        },
-        icon: const Icon(Icons.person_add),
-        label: const Text('Add Candidate'),
-      ),
     );
   }
 }

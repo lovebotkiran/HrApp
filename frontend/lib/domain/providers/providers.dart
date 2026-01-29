@@ -204,3 +204,15 @@ final currentUserProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final repository = ref.watch(authRepositoryProvider);
   return repository.getCurrentUser();
 });
+
+// Branding Providers
+final brandingRepositoryProvider = Provider(
+  (ref) => BrandingRepository(ref.watch(apiClientProvider)),
+);
+
+final brandingTemplatesProvider =
+    FutureProvider.family<List<Map<String, dynamic>>, String?>(
+        (ref, type) async {
+  final repository = ref.watch(brandingRepositoryProvider);
+  return repository.getTemplates(type);
+});

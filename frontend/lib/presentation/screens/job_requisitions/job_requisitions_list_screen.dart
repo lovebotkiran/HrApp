@@ -322,9 +322,45 @@ class _JobRequisitionsListScreenState
   }
 
   Future<void> _shareToLinkedIn(JobRequisition req) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.send, color: Color(0xFF0077B5)),
+            const SizedBox(width: 8),
+            const Text('LinkedIn Share'),
+          ],
+        ),
+        content: Text(
+          'Ready to post "${req.title}" to LinkedIn?\n\nThis will use your company\'s global branding settings.',
+          style: const TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF0077B5),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Share Now'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
     try {
       final repo = ref.read(jobRequisitionRepositoryProvider);
-      final result = await repo.shareOnLinkedIn(req.id!);
+
+      // We pass an empty map so the backend uses the global theme settings
+      final result = await repo.shareOnLinkedIn(req.id!, customization: {});
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

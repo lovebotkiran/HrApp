@@ -8,14 +8,15 @@ class Interview {
   @JsonKey(name: 'application_id')
   final String applicationId;
   @JsonKey(name: 'interviewer_id')
-  final String interviewerId;
-  @JsonKey(name: 'scheduled_time')
+  final String? interviewerId; // Made nullable
+  @JsonKey(name: 'scheduled_date') // Mapped to scheduled_date
   final DateTime scheduledTime;
+  @JsonKey(name: 'duration_minutes') // Mapped to duration_minutes
   final int duration;
   @JsonKey(name: 'interview_type')
   final String interviewType;
   final String status;
-  @JsonKey(name: 'meeting_link')
+  @JsonKey(name: 'video_link') // Mapped to video_link
   final String? meetingLink;
   final String? feedback;
   final int? rating;
@@ -25,7 +26,7 @@ class Interview {
   Interview({
     this.id,
     required this.applicationId,
-    required this.interviewerId,
+    this.interviewerId, // Made optional
     required this.scheduledTime,
     this.duration = 60,
     this.interviewType = 'Technical',
@@ -36,6 +37,7 @@ class Interview {
     this.createdAt,
   });
 
-  factory Interview.fromJson(Map<String, dynamic> json) => _$InterviewFromJson(json);
+  factory Interview.fromJson(Map<String, dynamic> json) =>
+      _$InterviewFromJson(json);
   Map<String, dynamic> toJson() => _$InterviewToJson(this);
 }

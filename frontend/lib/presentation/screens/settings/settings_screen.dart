@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:agentichr_frontend/core/theme/app_theme.dart';
 import 'package:agentichr_frontend/domain/providers/providers.dart';
+import 'package:agentichr_frontend/presentation/screens/settings/linkedin_theme_settings_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -19,14 +20,15 @@ class SettingsScreen extends ConsumerWidget {
           Consumer(
             builder: (context, ref, child) {
               final userAsync = ref.watch(currentUserProvider);
-              
+
               return Card(
                 child: ListTile(
                   leading: CircleAvatar(
                     backgroundColor: AppTheme.primaryColor,
                     child: Text(
                       userAsync.when(
-                        data: (user) => (user['name'] as String? ?? 'U')[0].toUpperCase(),
+                        data: (user) =>
+                            (user['name'] as String? ?? 'U')[0].toUpperCase(),
                         loading: () => '',
                         error: (_, __) => '?',
                       ),
@@ -147,6 +149,22 @@ class SettingsScreen extends ConsumerWidget {
                   subtitle: const Text('English'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {},
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.branding_watermark_outlined),
+                  title: const Text('LinkedIn Branding'),
+                  subtitle: const Text('Customize job post theme colors'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            const LinkedInThemeSettingsScreen(),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),

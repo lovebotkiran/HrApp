@@ -5,6 +5,8 @@ import mimetypes
 from typing import Dict, Any, Optional
 from PIL import Image, ImageDraw, ImageFont
 from core.config import settings
+from infrastructure.database.models import Configuration
+from infrastructure.database.connection import SessionLocal
 
 logger = logging.getLogger(__name__)
 
@@ -30,14 +32,63 @@ class LinkedInService:
             self.org_urn = f"urn:li:organization:{self.org_urn}"
             logger.info(f"Auto-prefixed LinkedIn Organization URN: {self.org_urn}")
         
+    async def save_theme(self, primary_color: str, accent_color: str, logo_url: str = None, background_url: str = None, company_name: str = None):
+        """Save company theme settings to configuration."""
+        db = SessionLocal()
+        try:
+            configs = {
+                "linkedin_primary_color": primary_color,
+                "linkedin_accent_color": accent_color,
+                "linkedin_logo_url": logo_url,
+                "linkedin_background_url": background_url,
+                "linkedin_company_name": company_name
+            }
+            
+            for key, value in configs.items():
+                if value is None:
+                    continue
+                config = db.query(Configuration).filter(Configuration.key == key).first()
+                if config:
+                    config.value = str(value)
+                else:
+                    db.add(Configuration(
+                        key=key, 
+                        value=str(value), 
+                        category="linkedin", 
+                        description=f"{key.replace('_', ' ').title()}"
+                    ))
+            
+            db.commit()
+        finally:
+            db.close()
+
+    async def get_theme(self) -> Dict[str, str]:
+        """Fetch saved company theme settings."""
+        db = SessionLocal()
+        try:
+            configs = db.query(Configuration).filter(Configuration.category == "linkedin").all()
+            result = {c.key: c.value for c in configs}
+            return {
+                "primary_color": result.get("linkedin_primary_color", "#0F172A"),
+                "accent_color": result.get("linkedin_accent_color", "#FF6B00"),
+                "logo_url": result.get("linkedin_logo_url", ""),
+                "background_url": result.get("linkedin_background_url", ""),
+                "company_name": result.get("linkedin_company_name", "AGENTIC HR")
+            }
+        finally:
+            db.close()
         
-    async def share_job(self, title: str, description: str, apply_url: str = "", image_path: str = None, generate_image: bool = True, logo_path: str = None, highlights: list = None) -> Dict[str, Any]:
+        
+    async def share_job(self, title: str, description: str, apply_url: str = "", image_path: str = None, generate_image: bool = True, logo_path: str = None, highlights: list = None, customization: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         Share a job posting to LinkedIn using the modern Posts API.
         """
         try:
+            # Strictly use global theme settings as requested
+            customization = await self.get_theme()
+            
             if generate_image and not image_path:
-                image_path = await self.generate_hiring_image(title, logo_path, highlights)
+                image_path = await self.generate_hiring_image(title, logo_path, highlights, customization)
             
             if not self.access_token:
                 logger.warning("LinkedIn access token not found.")
@@ -412,26 +463,87 @@ class LinkedInService:
                 
         return '\n'.join(formatted_lines)
 
-    async def generate_hiring_image(self, title: str, logo_path: str = None, highlights: list = None) -> Optional[str]:
+    def _hex_to_rgb(self, hex_color: str, default: tuple) -> tuple:
+        if not hex_color:
+            return default
+        try:
+            hex_color = hex_color.lstrip('#')
+            if len(hex_color) == 3:
+                hex_color = ''.join([c*2 for c in hex_color])
+            return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+        except Exception:
+            return default
+
+    def _get_contrast_color(self, rgb: tuple) -> tuple:
+        """Determines best text color (black or white) for a given background RGB using W3C Relative Luminance."""
+        def to_linear(c):
+            c /= 255.0
+            return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+        
+        # Calculate standard relative luminance (W3C standard)
+        luminance = 0.2126 * to_linear(rgb[0]) + 0.7152 * to_linear(rgb[1]) + 0.0722 * to_linear(rgb[2])
+        return (0, 0, 0) if luminance > 0.5 else (255, 255, 255)
+
+    async def generate_hiring_image(self, title: str, logo_path: str = None, highlights: list = None, customization: Dict[str, Any] = None) -> Optional[str]:
         """
         Generates a premium professional job poster using PIL based on specific design rules.
         """
+        if not customization:
+            customization = await self.get_theme()
         try:
             # 1. Setup Canvas
             width, height = 1080, 1350
             img = Image.new('RGB', (width, height), color=(255, 255, 255))
             draw = ImageDraw.Draw(img)
 
-            # 2. Color Palette
-            NAVY = (15, 23, 42)      # #0F172A
-            ORANGE = (255, 107, 0)   # #FF6B00
+            # 2. Color Palette (with dynamic customization)
+            NAVY = self._hex_to_rgb(customization.get('primary_color'), (15, 23, 42))      # #0F172A
+            ORANGE = self._hex_to_rgb(customization.get('accent_color'), (255, 107, 0))   # #FF6B00
             WHITE = (255, 255, 255)  # #FFFFFF
             LIGHT_GRAY = (241, 245, 249) # #F1F5F9
             DARK_GRAY = (51, 65, 85) # #334155
 
             # 3. Background Blocks
-            # Top accent
-            draw.rectangle([0, 0, width, 400], fill=LIGHT_GRAY)
+            # If background image exists, use it
+            bg_url = customization.get('background_url')
+            if bg_url:
+                try:
+                    bg_path = os.path.join(os.getcwd(), bg_url.lstrip('/'))
+                    if os.path.exists(bg_path):
+                        bg_img = Image.open(bg_path).convert('RGBA')
+                        # Professional Center Crop (Cover) Logic
+                        img_w, img_h = bg_img.size
+                        aspect_canvas = width / height
+                        aspect_img = img_w / img_h
+
+                        if aspect_img > aspect_canvas:
+                            # Image is wider: fill height and crop width
+                            new_h = height
+                            new_w = int(aspect_img * new_h)
+                            bg_img = bg_img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+                            left = (new_w - width) // 2
+                            bg_img = bg_img.crop((left, 0, left + width, height))
+                        else:
+                            # Image is taller/equal: fill width and crop height
+                            new_w = width
+                            new_h = int(new_w / aspect_img)
+                            bg_img = bg_img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+                            top = (new_h - height) // 2
+                            bg_img = bg_img.crop((0, top, width, top + height))
+
+                        # Paste background
+                        img.paste(bg_img, (0, 0))
+                        # Add a white/dark overlay for readability based on general brand
+                        overlay_color = (255, 255, 255, 210) if self._get_contrast_color(NAVY) == (255, 255, 255) else (20, 20, 20, 180)
+                        overlay = Image.new('RGBA', (width, height), overlay_color)
+                        img = Image.alpha_composite(img.convert('RGBA'), overlay).convert('RGB')
+                        draw = ImageDraw.Draw(img)
+                except Exception as e:
+                    logger.error(f"Error loading background image: {e}")
+
+            # Top accent (Draw solid block ONLY if no background image)
+            if not bg_url:
+                draw.rectangle([0, 0, width, 400], fill=LIGHT_GRAY)
             # Bottom footer bar
             draw.rectangle([0, height - 200, width, height], fill=ORANGE)
 
@@ -475,18 +587,42 @@ class LinkedInService:
                 return ImageFont.load_default()
 
             # 5. SECTION 1: HEADER (TOP-LEFT)
-            # Vertical Orange Stripe
-            draw.rectangle([100, 60, 115, 260], fill=ORANGE)
+            # Vertical Orange Stripe (Moved left for more space)
+            draw.rectangle([60, 60, 75, 260], fill=ORANGE)
             
-            draw.text((145, 60), "WE ARE", font=get_font(90, bold=True), fill=NAVY)
-            draw.text((145, 140), "HIRING!", font=get_font(155, bold=True), fill=ORANGE)
+            draw.text((100, 60), "WE ARE", font=get_font(90, bold=True), fill=NAVY)
+            draw.text((100, 140), "HIRING!", font=get_font(155, bold=True), fill=ORANGE)
 
             # 6. SECTION 5: BRANDING (TOP-RIGHT)
-            brand_text = "AGENTIC HR"
-            brand_font = get_font(45, bold=True)
-            b_bbox = draw.textbbox((0, 0), brand_text, font=brand_font)
-            b_w = b_bbox[2] - b_bbox[0]
-            draw.text((width - b_w - 90, 60), brand_text, font=brand_font, fill=NAVY)
+            custom_name = customization.get('company_name', "AGENTIC HR").upper()
+            logo_url = customization.get('logo_url')
+            if logo_url:
+                try:
+                    logo_path_abs = os.path.join(os.getcwd(), logo_url.lstrip('/'))
+                    if os.path.exists(logo_path_abs):
+                        logo_img = Image.open(logo_path_abs).convert('RGBA')
+                        logo_img.thumbnail((150, 150), Image.Resampling.LANCZOS)
+                        logo_x = width - logo_img.width - 60 # Reduced margin for more space
+                        img.paste(logo_img, (logo_x, 60), logo_img)
+                        # Draw name centered under logo
+                        sub_font = get_font(24, bold=True)
+                        n_bbox = draw.textbbox((0, 0), custom_name, font=sub_font)
+                        n_w = n_bbox[2] - n_bbox[0]
+                        text_x = logo_x + (logo_img.width - n_w) // 2
+                        draw.text((text_x, 60 + logo_img.height + 10), custom_name, font=sub_font, fill=NAVY)
+                    else:
+                         # Center fallback text in top-right area
+                         font_fallback = get_font(45, bold=True)
+                         f_bbox = draw.textbbox((0, 0), custom_name, font=font_fallback)
+                         f_w = f_bbox[2] - f_bbox[0]
+                         draw.text((width - f_w - 60, 60), custom_name, font=font_fallback, fill=NAVY)
+                except Exception as e:
+                    logger.error(f"Error loading logo: {e}")
+            else:
+                brand_font = get_font(45, bold=True)
+                b_bbox = draw.textbbox((0, 0), custom_name, font=brand_font)
+                b_w = b_bbox[2] - b_bbox[0]
+                draw.text((width - b_w - 60, 60), custom_name, font=brand_font, fill=NAVY)
 
             # 7. SECTION 2: JOB TITLE BANNER (CENTER)
             banner_y = 350
@@ -507,7 +643,7 @@ class LinkedInService:
                 t_w = t_bbox[2] - t_bbox[0]
 
             t_h = t_bbox[3] - t_bbox[1]
-            draw.text(((width - t_w) // 2, banner_y + (banner_h - t_h) // 2 - 5), title_text, font=font_title, fill=WHITE)
+            draw.text(((width - t_w) // 2, banner_y + (banner_h - t_h) // 2 - 5), title_text, font=font_title, fill=self._get_contrast_color(NAVY))
 
             # 8. SECTION 3: HIGHLIGHTS / REQUIREMENTS
             start_y = 540
@@ -555,7 +691,7 @@ class LinkedInService:
             cta_text = "APPLY NOW"
             c_bbox = draw.textbbox((0, 0), cta_text, font=font_cta)
             c_w = c_bbox[2] - c_bbox[0]
-            draw.text(((width - c_w) // 2, height - 135), cta_text, font=font_cta, fill=WHITE)
+            draw.text(((width - c_w) // 2, height - 135), cta_text, font=font_cta, fill=self._get_contrast_color(ORANGE))
 
             # 10. Save and Return
             filename = f"poster_{title.replace(' ', '_').lower()}.png"

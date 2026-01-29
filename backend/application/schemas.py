@@ -364,10 +364,14 @@ class RecruitmentPipelineStats(BaseModel):
 class RecruitmentMetrics(BaseModel):
     total_applications: int
     total_hires: int
+    active_jobs: int = 0
+    interviews_scheduled: int = 0
+    offers_sent: int = 0
     average_time_to_hire_days: Optional[Decimal]
     average_cost_per_hire: Optional[Decimal]
     offer_acceptance_rate: Optional[Decimal]
     source_effectiveness: dict
+
 
 
 # ============================================
@@ -410,3 +414,48 @@ class DepartmentSkillResponse(DepartmentSkillBase):
     
     class Config:
         from_attributes = True
+
+
+# ============================================
+# BRANDING SCHEMAS
+# ============================================
+
+class BrandingTemplateResponse(BaseModel):
+    id: UUID
+    name: str
+    template_type: str
+    preview_url: Optional[str] = None
+    file_path: Optional[str] = None
+    is_active: bool = True
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+
+class BrandingTemplatePreviewRequest(BaseModel):
+    title: str
+    highlights: List[str]
+    candidate_name: Optional[str] = None
+
+
+# ============================================
+# LINKEDIN SCHEMAS
+# ============================================
+
+class LinkedInCustomization(BaseModel):
+    primary_color: Optional[str] = "#0F172A"
+    accent_color: Optional[str] = "#FF6B00"
+    background_type: Optional[str] = "default"
+    logo_url: Optional[str] = None
+    background_url: Optional[str] = None
+    company_name: Optional[str] = "AGENTIC HR"
+
+class LinkedInAssetUploadResponse(BaseModel):
+    url: str
+    asset_type: str
+    success: bool = True
+
+class LinkedInShareRequest(BaseModel):
+    customization: Optional[LinkedInCustomization] = None
+

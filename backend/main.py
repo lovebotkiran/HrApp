@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 
 from core.config import settings
 from infrastructure.database.connection import init_db
-from api.routers import auth, job_requisitions, job_postings, candidates, applications, interviews, offers, dashboard, ai, onboarding, shortlisted_candidates
+from api.routers import auth, job_requisitions, job_postings, candidates, applications, interviews, offers, dashboard, ai, onboarding, shortlisted_candidates, branding
 
 # Configure logging
 logging.basicConfig(
@@ -58,11 +58,13 @@ if settings.DEBUG:
     # In development, allow all localhost origins
     app.add_middleware(
         CORSMiddleware,
-        allow_origin_regex="http://localhost:.*",
+        allow_origin_regex="https?://.*",
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+
 else:
     # In production, use specific origins
     app.add_middleware(
@@ -189,6 +191,13 @@ app.include_router(
     prefix=f"{settings.API_PREFIX}/shortlisted-candidates",
     tags=["Shortlisted Candidates"]
 )
+
+app.include_router(
+    branding.router,
+    prefix=f"{settings.API_PREFIX}/branding",
+    tags=["Branding"]
+)
+
 
 
 if __name__ == "__main__":

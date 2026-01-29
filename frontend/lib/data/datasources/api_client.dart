@@ -169,7 +169,10 @@ abstract class ApiClient {
   Future<JobRequisition> generateJobDescription(@Path('id') String id);
 
   @POST('/job-requisitions/{id}/share-linkedin')
-  Future<HttpResponse<dynamic>> shareToLinkedIn(@Path('id') String id);
+  Future<HttpResponse<dynamic>> shareToLinkedIn(
+    @Path('id') String id,
+    @Body() Map<String, dynamic> data,
+  );
 
   @GET('/job-requisitions/skills/{department}')
   Future<List<DepartmentSkill>> getDepartmentSkills(
@@ -259,7 +262,7 @@ abstract class ApiClient {
   @POST('/candidates/{id}/upload-resume')
   Future<HttpResponse<dynamic>> uploadResume(
     @Path('id') String id,
-    @Body() FormData file,
+    @Body() dynamic data,
   );
 
   @POST('/candidates/{id}/parse-resume')
@@ -477,5 +480,38 @@ abstract class ApiClient {
 
   @POST('/portal/messages')
   Future<HttpResponse<dynamic>> sendPortalMessage(
+      @Body() Map<String, dynamic> data);
+  @GET('/branding/')
+  Future<HttpResponse<dynamic>> getBrandingTemplates(
+      @Query('template_type') String? templateType);
+
+  @POST('/branding/preview/{template_id}')
+  Future<HttpResponse<dynamic>> getBrandingPreview(
+    @Path('template_id') String templateId,
+    @Body() Map<String, dynamic> data,
+  );
+
+  @GET('/branding/preview/{template_id}/ai')
+  Future<HttpResponse<dynamic>> getAIPreview(
+      @Path('template_id') String templateId);
+
+  @DELETE('/branding/templates/{id}')
+  Future<HttpResponse<dynamic>> deleteTemplate(@Path('id') String id);
+
+  @POST('/branding/templates')
+  Future<HttpResponse<dynamic>> uploadTemplate(
+    @Body() dynamic data,
+  );
+
+  @POST('/branding/assets')
+  Future<HttpResponse<dynamic>> uploadBrandingAsset(
+    @Body() dynamic data,
+  );
+
+  @GET('/branding/linkedin-theme')
+  Future<HttpResponse<dynamic>> getLinkedInTheme();
+
+  @POST('/branding/linkedin-theme')
+  Future<HttpResponse<dynamic>> updateLinkedInTheme(
       @Body() Map<String, dynamic> data);
 }

@@ -40,8 +40,12 @@ class JobRequisitionRepository {
           String id, Map<String, dynamic> data) =>
       _apiClient.approveRequisition(id, data);
 
-  Future<Map<String, dynamic>> shareOnLinkedIn(String id) async {
-    final response = await _apiClient.shareToLinkedIn(id);
+  Future<Map<String, dynamic>> shareOnLinkedIn(String id,
+      {Map<String, dynamic>? customization}) async {
+    final data = customization != null
+        ? {'customization': customization}
+        : <String, dynamic>{};
+    final response = await _apiClient.shareToLinkedIn(id, data);
     return response.data as Map<String, dynamic>;
   }
 
@@ -363,5 +367,60 @@ class CandidatePortalRepository {
       Map<String, dynamic> data) async {
     final response = await _apiClient.sendPortalMessage(data);
     return response.data as Map<String, dynamic>;
+  }
+}
+
+class BrandingRepository {
+  final ApiClient _apiClient;
+
+  BrandingRepository(this._apiClient);
+
+  Future<List<Map<String, dynamic>>> getTemplates(String? type) async {
+    final response = await _apiClient.getBrandingTemplates(type);
+    return List<Map<String, dynamic>>.from(response.data as List);
+  }
+
+  Future<String> getPreview(
+      String templateId, Map<String, dynamic> data) async {
+    final response = await _apiClient.getBrandingPreview(templateId, data);
+    return response.data['preview_url'] as String;
+  }
+
+  Future<String> getAIPreview(String templateId) async {
+    final response = await _apiClient.getAIPreview(templateId);
+    return response.data['preview_url'] as String;
+  }
+
+  Future<void> deleteTemplate(String id) => _apiClient.deleteTemplate(id);
+
+  Future<Map<String, dynamic>> uploadTemplate({
+    required String name,
+    required String type,
+    required MultipartFile file,
+  }) async {
+    final formData = FormData.fromMap({
+      'name': name,
+      'type': type,
+      'file': file,
+    });
+    final response = await _apiClient.uploadTemplate(formData);
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> getLinkedInTheme() async {
+    final response = await _apiClient.getLinkedInTheme();
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<void> updateLinkedInTheme(Map<String, dynamic> data) =>
+      _apiClient.updateLinkedInTheme(data);
+
+  Future<String> uploadAsset(String assetType, MultipartFile file) async {
+    final formData = FormData.fromMap({
+      'asset_type': assetType,
+      'file': file,
+    });
+    final response = await _apiClient.uploadBrandingAsset(formData);
+    return response.data['url'] as String;
   }
 }

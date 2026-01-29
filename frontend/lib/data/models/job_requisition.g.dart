@@ -18,7 +18,8 @@ JobRequisition _$JobRequisitionFromJson(Map<String, dynamic> json) =>
       requiredSkills: (json['required_skills'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
-      jobDescription: json['job_description'] as String?,
+      jobDescription: json['jobDescription'] as String?,
+      location: json['location'] as String?,
       createdAt: json['created_at'] == null
           ? null
           : DateTime.parse(json['created_at'] as String),
@@ -34,6 +35,7 @@ Map<String, dynamic> _$JobRequisitionToJson(JobRequisition instance) =>
       'employment_type': instance.employmentType,
       'experience_min': instance.experienceMin,
       'required_skills': instance.requiredSkills,
-      'job_description': instance.jobDescription,
+      'jobDescription': instance.jobDescription,
+      'location': instance.location,
       'created_at': instance.createdAt?.toIso8601String(),
     };

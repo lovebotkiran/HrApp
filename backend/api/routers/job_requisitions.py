@@ -20,7 +20,8 @@ from application.schemas import (
     MessageResponse,
     PaginatedResponse,
     DepartmentSkillCreate,
-    DepartmentSkillResponse
+    DepartmentSkillResponse,
+    LinkedInShareRequest
 )
 from core.config import settings
 from application.services.ai_service import AIService
@@ -454,6 +455,7 @@ async def generate_job_description(
 @router.post("/{requisition_id}/share-linkedin", response_model=MessageResponse)
 async def share_requisition_linkedin(
     requisition_id: str,
+    share_request: Optional[LinkedInShareRequest] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -539,7 +541,8 @@ async def share_requisition_linkedin(
             apply_url=apply_url,
             generate_image=True, 
             logo_path=logo_path,
-            highlights=highlights
+            highlights=highlights,
+            customization=share_request.customization.dict() if share_request and share_request.customization else None
         )
     except Exception as e:
         logger.error(f"Unexpected error in LinkedIn sharing flow: {e}")
